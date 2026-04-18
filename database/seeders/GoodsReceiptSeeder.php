@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\PurchaseOrder;
 use App\Models\GoodsReceipt;
-use App\Models\PoItem;
+use App\Models\PurchaseOrderItem;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -37,9 +37,9 @@ class GoodsReceiptSeeder extends Seeder
         ]);
 
         // 3. Ambil item barang dari PO tersebut untuk dimasukkan ke Detail LPB
-        $poItems = PoItem::where('purchase_order_id', $po->id)->get();
+        $purchaseOrderItems = PurchaseOrderItem::where('purchase_order_id', $po->id)->get();
 
-        foreach ($poItems as $item) {
+        foreach ($purchaseOrderItems as $item) {
             // Kita masukkan ke tabel detail: goods_receipt_items
             // Kita gunakan DB::table karena biasanya tabel detail belum dibuatkan Model-nya
             DB::table('goods_receipt_items')->insert([

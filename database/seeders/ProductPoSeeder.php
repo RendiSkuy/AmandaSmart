@@ -35,7 +35,7 @@ public function run(): void
     ]);
 
     // 3. Buat Detail PO (Gunakan Rumus PB dari Model)
-    \App\Models\PoItem::create([
+    \App\Models\PurchaseOrderItem::create([
         'purchase_order_id' => $po->id,
         'product_id' => $product->id,
         'qty_pb' => $product->qty_pb, // Otomatis terhitung (200-50)/40 * 40 = 120

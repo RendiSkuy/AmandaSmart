@@ -6,16 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PoItem extends Model
+class PurchaseOrderItem extends Model
 {
     use HasFactory;
 
+    // Nama tabel disesuaikan dengan migration baru
+    protected $table = 'purchase_order_items';
+
     protected $fillable = [
-        'purchase_order_id',
-        'product_id',
-        'qty_pb',
-        'qty_ordered',
-        'unit_price',
+        'purchase_order_id', 'product_id', 'qty_pb', 'qty_ordered', 'unit_price'
     ];
 
     protected $casts = [
@@ -29,7 +28,7 @@ class PoItem extends Model
      */
     public function purchaseOrder(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->belongsTo(PurchaseOrder::class, 'purchase_order_id');
     }
 
     /**

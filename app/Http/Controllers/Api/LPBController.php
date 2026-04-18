@@ -15,8 +15,8 @@ class LPBController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        // Ambil data LPB, sertakan info PO dan DC (Gudang tujuan)
-        $lpbs = GoodsReceipt::with(['purchaseOrder', 'distributionCenter'])
+        // TAMBAHKAN 'items.product' di sini agar qty_ordered & qty_received muncul di daftar
+        $lpbs = GoodsReceipt::with(['purchaseOrder', 'distributionCenter', 'items.product'])
             ->where('supplier_id', $supplierId)
             ->latest()
             ->get();
@@ -34,11 +34,17 @@ class LPBController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        // Cari LPB berdasarkan ID dan pastikan milik supplier ini
-        // Kita asumsikan model GoodsReceipt punya relasi 'items'
+        // Cari LPB dan pastikan milik supplier ini
         $lpb = GoodsReceipt::with(['purchaseOrder', 'distributionCenter', 'items.product'])
             ->where('supplier_id', $supplierId)
-            ->findOrFail($id);
+            ->find($id); // Pakai find agar bisa kita handle jika null
+
+        if (!$lpb) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Data LPB tidak ditemukan atau Anda tidak memiliki akses.'
+            ], 404);
+        }
 
         return response()->json([
             'status' => 'success',

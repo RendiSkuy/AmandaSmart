@@ -3,45 +3,69 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\VrsSchedule; // WAJIB ADA
+use App\Models\PurchaseOrder; // WAJIB ADA
 use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class VRSController extends Controller
 {
     /**
-     * Menampilkan profil lengkap supplier yang sedang login
+     * Menampilkan daftar jadwal booking truk milik supplier
      */
     public function index(Request $request)
     {
-        // Ambil data supplier berdasarkan ID yang nempel di user
-        $supplier = Supplier::findOrFail($request->user()->supplier_id);
+        $supplierId = $request->user()->supplier_id;
+
+        $schedules = VrsSchedule::with(['purchaseOrder'])
+            ->where('supplier_id', $supplierId)
+            ->latest()
+            ->get();
 
         return response()->json([
             'status' => 'success',
-            'data' => $supplier
+            'data' => $schedules
         ]);
     }
 
     /**
-     * Update data profil (Misal ganti alamat atau nomor telepon)
+     * Supplier melakukan booking slot kedatangan truk
      */
-    public function update(Request $request)
+    public function createBooking(Request $request)
     {
-        $supplier = Supplier::findOrFail($request->user()->supplier_id);
-
-        $validated = $request->validate([
-            'name' => 'string|max:255',
-            'address' => 'string',
-            'phone' => 'string|max:20',
-            'pic_name' => 'string|max:255',
+        $request->validate([
+            'purchase_order_id' => 'required|exists:purchase_orders,id',
+            'scheduled_date' => 'required|date|after_or_equal:today',
+            'time_slot' => 'required|string'
         ]);
 
-        $supplier->update($validated);
+        $po = PurchaseOrder::findOrFail($request->purchase_order_id);
+
+        // Cek apakah PO ini sudah pernah di-booking sebelumnya (kecuali yang batal)
+        $existing = VrsSchedule::where('purchase_order_id', $po->id)
+            ->where('status', '!=', 'cancelled')
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'PO ini sudah memiliki jadwal kedatangan.'
+            ], 422);
+        }
+
+        $schedule = VrsSchedule::create([
+            'supplier_id' => $request->user()->supplier_id,
+            'purchase_order_id' => $po->id,
+            'dc_id' => $po->dc_id ?? 1,
+            'scheduled_date' => $request->scheduled_date,
+            'time_slot' => $request->time_slot,
+            'status' => 'booked'
+        ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Profil supplier berhasil diperbarui',
-            'data' => $supplier
+            'message' => 'Slot kedatangan truk berhasil dipesan!',
+            'data' => $schedule
         ]);
     }
 }

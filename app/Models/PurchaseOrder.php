@@ -50,9 +50,10 @@ class PurchaseOrder extends Model
     /**
      * RELASI: PO memiliki banyak detail barang (Items)
      */
-    public function items(): HasMany
+    public function items()
     {
-        return $this->hasMany(PoItem::class);
+        // Pastikan diarahkan ke PurchaseOrderItem
+        return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
     }
 
     /**

@@ -20,9 +20,12 @@ class DatabaseSeeder extends Seeder
 
     // Tambahkan ini agar menggunakan seeder yang kita buat sendiri:
     $this->call([
-        SupplierSeeder::class,
-        ProductPoSeeder::class,
-        GoodsReceiptSeeder::class,
-    ]);
+            SupplierSeeder::class,      // Buat Toko & User
+            ProductPoSeeder::class,     // Buat Master Barang & PO Pertama
+            PurchaseOrderSeeder::class, // Buat Variasi PO BKL/DC
+            GoodsReceiptSeeder::class,  // Buat Penerimaan Barang (LPB)
+            ReturSeeder::class,         // Buat Pengembalian Barang (Retur)
+            VrsScheduleSeeder::class,   // Buat Jadwal Booking VRS
+        ]);
 }
 }

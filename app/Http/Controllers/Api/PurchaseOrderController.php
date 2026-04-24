@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Str; // Import ini sudah benar
+use Illuminate\Support\Str;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Product;
@@ -13,11 +13,13 @@ use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
+    /**
+     * READ: Menampilkan daftar PO (Akses via DB Slave/Read Connection jika ada)
+     */
     public function index(Request $request)
     {
         $supplierId = $request->user()->supplier_id;
 
-        // Ambil PO milik supplier, sertakan data DC dan item produk
         $pos = PurchaseOrder::with(['dc', 'items.product']) 
             ->withCount('items')
             ->where('supplier_id', $supplierId)
@@ -30,67 +32,47 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    /**
+     * CREATE: Generate PO Otomatis menggunakan Stored Procedure
+     * Sesuai instruksi: Logic PB dipindah ke Database Layer (PostgreSQL)
+     */
     public function generateAutoPO(Request $request)
     {
         $supplierId = $request->user()->supplier_id;
+        $userId = $request->user()->id;
 
-        // Cari produk milik supplier yang stoknya butuh diisi
-        $productsToOrder = Product::where('supplier_id', $supplierId)
-            ->whereRaw('on_hand < max_stock')
-            ->get();
-
-        if ($productsToOrder->isEmpty()) {
-            return response()->json([
-                'status' => 'info',
-                'message' => 'Semua stok masih mencukupi, tidak ada PO yang dibuat.'
-            ]);
-        }
-
-        return DB::transaction(function () use ($productsToOrder, $supplierId, $request) {
-            // PERBAIKAN: Menggunakan Str::random(4) bukan str_random(4)
-            $po = PurchaseOrder::create([
-                'po_number' => 'PO-' . date('Ymd') . '-' . strtoupper(Str::random(4)),
-                'supplier_id' => $supplierId,
-                'dc_id' => 1, 
-                'type' => 'dc',
-                'order_date' => now(),
-                'expire_date' => now()->addDays(7),
-                'status' => 'active'
-            ]);
-
-            foreach ($productsToOrder as $product) {
-                $selisih = $product->max_stock - $product->on_hand;
-                $jumlahDus = floor($selisih / $product->minor);
-                $qtyPb = $jumlahDus * $product->minor;
-
-                if ($qtyPb > 0) {
-                    PurchaseOrderItem::create([
-                        'purchase_order_id' => $po->id,
-                        'product_id' => $product->id,
-                        'qty_pb' => $qtyPb,
-                        'qty_ordered' => $qtyPb,
-                        'unit_price' => $product->unit_price
-                    ]);
-                }
-            }
-
-            // Trigger Notifikasi: PO Baru Berhasil Dibuat
-            Notification::create([
-                'user_id' => $request->user()->id,
-                'title' => 'Pesanan Baru (PO)',
-                'body' => 'Sistem AmandaMart telah membuat PO baru otomatis: ' . $po->po_number,
-                'type' => 'PO_NEW',
-                'reference_id' => $po->id
-            ]);
+        try {
+            // Membungkus dalam transaksi untuk menjaga konsistensi data (Atomic)
+            DB::transaction(function () use ($supplierId, $userId) {
+                // Memanggil Procedure 'generate_auto_po_proc' di PostgreSQL
+                // Parameter: 1. ID Supplier, 2. ID User (untuk trigger notif di DB)
+                DB::statement('CALL generate_auto_po_proc(?, ?)', [$supplierId, $userId]);
+            });
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'PO Otomatis berhasil dibuat berdasarkan Rumus PB',
-                'data' => $po->load('items')
+                'message' => 'PO Berhasil dibuat secara otomatis oleh Stored Procedure (PB Logic di DB)'
             ]);
-        });
+
+        } catch (\Exception $e) {
+            /** * Menangkap error dari database (misal RAISE EXCEPTION 'Stok mencukupi')
+             * Kita membersihkan pesan error agar lebih rapi dilihat di Postman
+             */
+            $errorMessage = $e->getMessage();
+            if (str_contains($errorMessage, 'Semua stok mencukupi')) {
+                $errorMessage = 'Semua stok masih mencukupi, tidak ada PO yang dibuat.';
+            }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pesan dari DB: ' . $errorMessage
+            ], 422); // Gunakan code 422 untuk validation error dari DB
+        }
     }
 
+    /**
+     * READ: Detail PO berdasarkan ID
+     */
     public function show(Request $request, $id)
     {
         $supplierId = $request->user()->supplier_id;
@@ -105,8 +87,13 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    /**
+     * UPDATE: Penyesuaian Qty oleh Supplier
+     * Tetap menggunakan logic Laravel untuk validasi input cepat (Application Layer)
+     */
     public function updateItem(Request $request, $id)
     {
+        // Cari detail item PO beserta relasi produknya
         $item = PurchaseOrderItem::with(['product', 'purchaseOrder'])->findOrFail($id);
         
         $request->validate([
@@ -116,7 +103,7 @@ class PurchaseOrderController extends Controller
         $newQty = $request->qty_ordered;
         $product = $item->product;
 
-        // Validasi Minor
+        // 1. VALIDASI LOGISTIK (MINOR): Memastikan efisiensi pengiriman
         if ($newQty % $product->minor !== 0) {
             return response()->json([
                 'status' => 'error',
@@ -124,21 +111,22 @@ class PurchaseOrderController extends Controller
             ], 422);
         }
 
-        // Validasi Max Stock
+        // 2. VALIDASI KAPASITAS (MAX STOCK): Memastikan rak gudang muat
         if (($newQty + $product->on_hand) > $product->max_stock) {
             return response()->json([
                 'status' => 'error',
-                'message' => "Jumlah terlalu banyak! Rak hanya muat " . ($product->max_stock - $product->on_hand) . " pcs lagi."
+                'message' => "Jumlah terlalu banyak! Sisa kapasitas rak hanya muat " . ($product->max_stock - $product->on_hand) . " pcs lagi."
             ], 422);
         }
 
+        // Simpan perubahan ke database
         $item->update(['qty_ordered' => $newQty]);
 
-        // Trigger Notifikasi: Supplier update Qty
+        // Trigger Notifikasi ke Tabel Notification (Event-Driven)
         Notification::create([
             'user_id' => $request->user()->id,
             'title' => 'Qty PO Diperbarui',
-            'body' => 'Anda telah menyesuaikan jumlah pesanan pada ' . $item->purchaseOrder->po_number,
+            'body' => 'Jumlah pesanan ' . $item->purchaseOrder->po_number . ' telah disesuaikan menjadi ' . $newQty,
             'type' => 'PO_UPDATE',
             'reference_id' => $item->purchase_order_id
         ]);

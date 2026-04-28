@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+    // ← Tambahkan ini
+        $middleware->alias([
+            '2fa.session' => \App\Http\Middleware\TwoFactorSession::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

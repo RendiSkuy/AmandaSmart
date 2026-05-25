@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 
+
+Route::get('/', function () {
+    return view('welcome');
+});
 // ── Login ──
 Route::get('/login', fn() => view('auth.login'))->name('login');
 Route::post('/login', [AuthController::class, 'loginWeb'])->name('login.submit');

@@ -302,6 +302,36 @@ class AuthController extends Controller
     }
 
     // =========================================================
+    // USER DETAIL WITH TOKEN - Tampilkan semua data user + token
+    // =========================================================
+    public function userDetail(Request $request)
+    {
+        $user = $request->user()->load(['supplier', 'tokens']);
+        
+        $currentToken = $request->bearerToken();
+        
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'user'           => $user,
+                'current_token'  => [
+                    'token'       => $currentToken,
+                    'device_name' => $request->user()->currentAccessToken()->name ?? 'Unknown Device'
+                ],
+                'active_tokens'  => $request->user()->tokens->map(function ($token) {
+                    return [
+                        'id'           => $token->id,
+                        'name'         => $token->name,
+                        'last_used_at' => $token->last_used_at,
+                        'created_at'   => $token->created_at,
+                        'expires_at'   => $token->expires_at
+                    ];
+                })
+            ]
+        ]);
+    }
+
+    // =========================================================
     // LOGOUT WEB
     // =========================================================
     public function logoutWeb(Request $request)

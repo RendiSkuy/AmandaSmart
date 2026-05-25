@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // AUTH & PROFILE
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/user-detail', [AuthController::class, 'userDetail']); // Menampilkan semua data user + token
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // PURCHASE ORDER (PO)

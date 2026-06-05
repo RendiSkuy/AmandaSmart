@@ -26,6 +26,8 @@ Route::middleware(['2fa.session'])->group(function () {
 // ── Fallback Login Route (to avoid Route [login] not defined exception) ──
 Route::get('/login', fn() => redirect('/'))->name('login');
 
+
+
 use App\Http\Controllers\WebDashboardController;
 
 // ── Protected Web Dashboard ──

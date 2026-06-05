@@ -226,8 +226,10 @@ class WebDashboardController extends Controller
 
         $po = PurchaseOrder::findOrFail($request->purchase_order_id);
         $selectedOffer = Offer::findOrFail($request->offer_id);
+        
+        $ttfData = null;
 
-        DB::transaction(function () use ($po, $selectedOffer, $request) {
+        DB::transaction(function () use ($po, $selectedOffer, $request, &$ttfData) {
             $po->update([
                 'status'               => 'APPROVED',
                 'selected_supplier_id' => $selectedOffer->supplier_id,
@@ -241,12 +243,66 @@ class WebDashboardController extends Controller
             Offer::where('purchase_order_id', $po->id)
                 ->where('id', '!=', $selectedOffer->id)
                 ->update(['status' => 'rejected']);
+
+            // 1. Create clean Goods Receipt (LPB)
+            $barcode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $po->product->name));
+            $goodsReceipt = GoodsReceipt::create([
+                'purchase_order_id' => $po->id,
+                'qty_received'      => $po->qty_po,
+                'received_at'       => now(),
+                'barcode'           => $barcode,
+            ]);
+
+            // 2. Create clean TTF
+            $totalAmount = $po->qty_po * $selectedOffer->price_per_pcs;
+            $ttf = Ttf::create([
+                'goods_receipt_id' => $goodsReceipt->id,
+                'total_amount'     => $totalAmount,
+                'total_deductions' => 0,
+                'status_payment'   => 'pending'
+            ]);
+
+            // 3. Complete VRS schedule if exists
+            VrsSchedule::where('purchase_order_id', $po->id)->update([
+                'status' => 'completed',
+                'actual_arrival_at' => now()
+            ]);
+
+            // 4. Update Product Stock
+            $product = $po->product;
+            if ($product) {
+                $product->increment('on_hand', $po->qty_po);
+            }
+
+            $ttfData = [
+                'ttf_id' => $ttf->id,
+                'total_amount' => $totalAmount,
+                'price_per_pcs' => $selectedOffer->price_per_pcs
+            ];
         });
 
-        if ($request->expectsJson() || $request->ajax()) {
-            return response()->json(['success' => true, 'message' => 'Pemenang lelang telah disetujui. Status PO diperbarui menjadi APPROVED.']);
+        // 5. Trigger Webhook Gateway for WhatsApp Notification (Outside Transaction)
+        if ($ttfData) {
+            $supplier = Supplier::find($selectedOffer->supplier_id);
+            if ($supplier && $supplier->whatsapp_number) {
+                try {
+                    \Illuminate\Support\Facades\Http::timeout(3)->post(env('WHATSAPP_WEBHOOK_URL', 'https://api.amandamart.com/webhook/whatsapp'), [
+                        'to'        => $supplier->whatsapp_number,
+                        'message'   => "Halo {$supplier->name}, penawaran Anda untuk PO {$po->po_number} telah disetujui dengan harga modal Rp " . number_format($ttfData['price_per_pcs'], 0, ',', '.') . "/PCS. Nota TTF #{$ttfData['ttf_id']} dengan total Rp " . number_format($ttfData['total_amount'], 0, ',', '.') . " telah diterbitkan secara bersih. Terima kasih.",
+                        'po_number' => $po->po_number,
+                        'ttf_id'    => $ttfData['ttf_id'],
+                        'amount'    => $ttfData['total_amount']
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("Gagal mengirim webhook WhatsApp: " . $e->getMessage());
+                }
+            }
         }
-        return back()->with('success', 'Pemenang lelang telah disetujui. Status PO diperbarui menjadi APPROVED.');
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Pemenang lelang telah disetujui. Status PO APPROVED, LPB terbit, dan TTF #' . $ttfData['ttf_id'] . ' berhasil diterbitkan otomatis.']);
+        }
+        return back()->with('success', 'Pemenang lelang telah disetujui. Status PO APPROVED, LPB terbit, dan TTF #' . $ttfData['ttf_id'] . ' berhasil diterbitkan otomatis.');
     }
 
     public function approveOfferQuick(Request $request)
@@ -259,10 +315,13 @@ class WebDashboardController extends Controller
         ]);
 
         $po = PurchaseOrder::findOrFail($request->purchase_order_id);
+        
+        $selectedOffer = null;
+        $ttfData = null;
 
-        DB::transaction(function () use ($po, $request) {
+        DB::transaction(function () use ($po, $request, &$selectedOffer, &$ttfData) {
             // 1. Buat penawaran baru
-            $offer = Offer::create([
+            $selectedOffer = Offer::create([
                 'purchase_order_id' => $po->id,
                 'supplier_id'       => $request->supplier_id,
                 'user_id'           => $request->user()->id,
@@ -279,11 +338,65 @@ class WebDashboardController extends Controller
 
             // 3. Tolak penawaran lain jika ada
             Offer::where('purchase_order_id', $po->id)
-                ->where('id', '!=', $offer->id)
+                ->where('id', '!=', $selectedOffer->id)
                 ->update(['status' => 'rejected']);
+
+            // 4. Create clean Goods Receipt (LPB)
+            $barcode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $po->product->name));
+            $goodsReceipt = GoodsReceipt::create([
+                'purchase_order_id' => $po->id,
+                'qty_received'      => $po->qty_po,
+                'received_at'       => now(),
+                'barcode'           => $barcode,
+            ]);
+
+            // 5. Create clean TTF
+            $totalAmount = $po->qty_po * $request->price_per_pcs;
+            $ttf = Ttf::create([
+                'goods_receipt_id' => $goodsReceipt->id,
+                'total_amount'     => $totalAmount,
+                'total_deductions' => 0,
+                'status_payment'   => 'pending'
+            ]);
+
+            // 6. Complete VRS schedule if exists
+            VrsSchedule::where('purchase_order_id', $po->id)->update([
+                'status' => 'completed',
+                'actual_arrival_at' => now()
+            ]);
+
+            // 7. Update Product Stock
+            $product = $po->product;
+            if ($product) {
+                $product->increment('on_hand', $po->qty_po);
+            }
+
+            $ttfData = [
+                'ttf_id' => $ttf->id,
+                'total_amount' => $totalAmount,
+                'price_per_pcs' => $request->price_per_pcs
+            ];
         });
 
-        return back()->with('success', 'Penawaran dibuat dan vendor berhasil disetujui.');
+        // 8. Trigger Webhook Gateway for WhatsApp Notification (Outside Transaction)
+        if ($ttfData && $selectedOffer) {
+            $supplier = Supplier::find($request->supplier_id);
+            if ($supplier && $supplier->whatsapp_number) {
+                try {
+                    \Illuminate\Support\Facades\Http::timeout(3)->post(env('WHATSAPP_WEBHOOK_URL', 'https://api.amandamart.com/webhook/whatsapp'), [
+                        'to'        => $supplier->whatsapp_number,
+                        'message'   => "Halo {$supplier->name}, penawaran Anda untuk PO {$po->po_number} telah disetujui dengan harga modal Rp " . number_format($ttfData['price_per_pcs'], 0, ',', '.') . "/PCS. Nota TTF #{$ttfData['ttf_id']} dengan total Rp " . number_format($ttfData['total_amount'], 0, ',', '.') . " telah diterbitkan secara bersih. Terima kasih.",
+                        'po_number' => $po->po_number,
+                        'ttf_id'    => $ttfData['ttf_id'],
+                        'amount'    => $ttfData['total_amount']
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning("Gagal mengirim webhook WhatsApp: " . $e->getMessage());
+                }
+            }
+        }
+
+        return back()->with('success', 'Penawaran dibuat, vendor disetujui, dan Faktur TTF #' . $ttfData['ttf_id'] . ' berhasil diterbitkan otomatis.');
     }
 
     public function createVrsBooking(Request $request)

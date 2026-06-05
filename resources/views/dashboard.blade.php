@@ -583,7 +583,7 @@
                                                             
                                                             <div class="flex items-center space-x-1">
                                                                 <label class="text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase whitespace-nowrap">Deadline:</label>
-                                                                <input type="date" name="delivery_deadline" required value="{{ now()->addDays(7)->format('Y-m-d') }}"
+                                                                <input type="date" name="delivery_deadline" required 
                                                                        class="text-[11px] border border-slate-350 dark:border-slate-800 rounded-md px-2 py-0.5 focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-950 text-slate-850 dark:text-white font-semibold">
                                                             </div>
 

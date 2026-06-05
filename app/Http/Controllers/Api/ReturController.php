@@ -15,8 +15,11 @@ class ReturController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        $returs = Retur::with(['goodsReceipt', 'items.product'])
-            ->where('supplier_id', $supplierId)
+        $returs = Retur::with(['goodsReceipt', 'product'])
+            ->whereHas('goodsReceipt.purchaseOrder.offers', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id)
+                      ->where('status', 'accepted');
+            })
             ->latest()
             ->get();
 
@@ -27,14 +30,17 @@ class ReturController extends Controller
     }
 
     /**
-     * Menampilkan detail satu dokumen retur beserta list barangnya
+     * Menampilkan detail satu dokumen retur
      */
     public function show(Request $request, $id)
     {
         $supplierId = $request->user()->supplier_id;
 
-        $retur = Retur::with(['goodsReceipt', 'items.product'])
-            ->where('supplier_id', $supplierId)
+        $retur = Retur::with(['goodsReceipt', 'product'])
+            ->whereHas('goodsReceipt.purchaseOrder.offers', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id)
+                      ->where('status', 'accepted');
+            })
             ->findOrFail($id);
 
         return response()->json([

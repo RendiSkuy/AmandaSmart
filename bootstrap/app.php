@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
     // ← Tambahkan ini
         $middleware->alias([
             '2fa.session' => \App\Http\Middleware\TwoFactorSession::class,
+            'role'        => \App\Http\Middleware\RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

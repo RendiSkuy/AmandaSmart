@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PurchaseOrderController;
 use App\Http\Controllers\Api\LPBController;
 use App\Http\Controllers\Api\ServiceLevelController;
-use App\Http\Controllers\Api\TtfController; // Pastikan huruf besar kecilnya sama dengan nama file
+use App\Http\Controllers\Api\TTFController;
 use App\Http\Controllers\Api\ReturController;
 use App\Http\Controllers\Api\VRSController;
 use App\Http\Controllers\Api\NotificationController;
@@ -14,39 +14,36 @@ use App\Http\Controllers\Api\NotificationController;
 // 1. Public Routes
 Route::post('/login', [AuthController::class, 'login']);
 
-// 2. Protected Routes
+// 2. Protected Routes (Wajib Login Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
     
-    // AUTH & PROFILE
+    // AUTH & PROFILE GLOBAL
     Route::get('/me', [AuthController::class, 'me']);
-    Route::get('/user-detail', [AuthController::class, 'userDetail']); // Menampilkan semua data user + token
+    Route::get('/user-detail', [AuthController::class, 'userDetail']);
     Route::post('/logout', [AuthController::class, 'logout']);
-
-    // PURCHASE ORDER (PO)
-    Route::get('/purchase-orders', [PurchaseOrderController::class, 'index']);
-    Route::get('/purchase-orders/{id}', [PurchaseOrderController::class, 'show']);
-    Route::post('/purchase-orders/generate-auto', [PurchaseOrderController::class, 'generateAutoPO']);
-    Route::put('/purchase-order-items/{id}', [PurchaseOrderController::class, 'updateItem']); // Penamaan seragam
-    Route::post('/purchase-orders/{id}/read', [PurchaseOrderController::class, 'markAsRead']);
-
-    // LOGISTIK & PENERIMAAN (LPB & RETUR)
-    Route::get('/lpb', [LPBController::class, 'index']);
-    Route::get('/lpb/{id}', [LPBController::class, 'show']);
-    Route::get('/retur', [ReturController::class, 'index']);
-    Route::get('/retur/{id}', [ReturController::class, 'show']);
-
-    // VEHICLE RESERVATION SYSTEM (VRS)
-    Route::get('/vrs/booking', [VRSController::class, 'index']);
-    Route::post('/vrs/booking', [VRSController::class, 'createBooking']);
-    Route::get('/vrs/profile', [VRSController::class, 'showProfile']); // Contoh pembeda dengan index booking
-    Route::put('/vrs/profile', [VRSController::class, 'updateProfile']);
-
-    // FINANCE (TTF)
-    Route::get('/ttf', [TtfController::class, 'index']);
-    Route::post('/ttf/generate', [TtfController::class, 'store']);
-
-    // DASHBOARD & NOTIFICATIONS
-    Route::get('/dashboard/service-level', [ServiceLevelController::class, 'index']);
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    // ── DATA AKSES PORTAL SUPPLIER (b2b.amanda.id) ──
+    // Fitur-fitur yang boleh diakses oleh vendor luar
+    Route::middleware('role:supplier')->group(function () {
+        Route::get('/supplier/purchase-orders', [PurchaseOrderController::class, 'index']); 
+        Route::post('/supplier/purchase-orders/{id}/offers', [PurchaseOrderController::class, 'submitOffer']); // Kirim Harga per PCS
+        Route::get('/supplier/vrs/booking', [VRSController::class, 'index']);
+        Route::post('/supplier/vrs/booking', [VRSController::class, 'createBooking']);
+    });
+
+    // ── DATA AKSES INTERNAL MERCHANDISER (md.amanda.id) ──
+    // Fitur-fitur rahasia yang HANYA boleh diakses internal MD & Gudang
+    Route::middleware('role:md')->group(function () {
+        Route::post('/md/purchase-orders/generate-auto', [PurchaseOrderController::class, 'generateAutoPO']); // Pemicu manual PB
+        Route::get('/md/purchase-orders/{id}', [PurchaseOrderController::class, 'show']);
+        Route::get('/md/purchase-orders/{id}/compare', [PurchaseOrderController::class, 'compareOffers']);
+        Route::post('/md/lpb', [LPBController::class, 'store']); // Input LPB & Retur dari Gudang
+        Route::get('/md/lpb', [LPBController::class, 'index']);
+        Route::get('/md/retur', [ReturController::class, 'index']);
+        Route::get('/md/ttf', [TTFController::class, 'index']);
+        Route::post('/md/ttf/generate', [TTFController::class, 'store']);
+        Route::get('/md/dashboard/service-level', [ServiceLevelController::class, 'index']); // Nilai Rapor Vendor
+    });
 });

@@ -4,728 +4,329 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup 2FA — AmandaMart B2B</title>
+    
+    <!-- Google Fonts & Tailwind Play CDN -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        :root {
-            --bg: #F7F6F3;
-            --surface: #FFFFFF;
-            --border: #E4E2DC;
-            --border-focus: #1A1A1A;
-            --text-primary: #1A1A1A;
-            --text-secondary: #7A7870;
-            --text-muted: #B0AEA8;
-            --accent: #1A1A1A;
-            --accent-hover: #333333;
-            --error: #C0392B;
-            --error-bg: #FDF2F2;
-            --success: #27AE60;
-            --success-bg: #F0FBF4;
-            --warning: #D35400;
-            --warning-bg: #FEF9F0;
-            --radius: 6px;
-            --transition: 200ms ease;
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Theme Checker -->
+    <script>
+        if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
         }
-
-        html, body { height: 100%; }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background-color: var(--bg);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 40px 24px;
+    </script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
         }
-
-        .wrapper {
-            width: 100%;
-            max-width: 480px;
-            animation: fadeUp 0.4s ease both;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Brand */
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 32px;
-        }
-
-        .brand-icon {
-            width: 32px;
-            height: 32px;
-            background: var(--accent);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .brand-icon svg {
-            width: 18px; height: 18px;
-            fill: none; stroke: #fff;
-            stroke-width: 1.8;
-            stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        .brand-name { font-size: 15px; font-weight: 600; letter-spacing: -0.3px; }
-        .brand-sub  { font-size: 11px; color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase; }
-
-        /* Progress bar */
-        .progress {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            margin-bottom: 28px;
-        }
-
-        .progress-step {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .progress-step.active { color: var(--text-primary); }
-        .progress-step.done   { color: var(--success); }
-
-        .step-dot {
-            width: 24px; height: 24px;
-            border-radius: 50%;
-            border: 1.5px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 600;
-            color: var(--text-muted);
-            background: var(--surface);
-            flex-shrink: 0;
-        }
-
-        .progress-step.active .step-dot {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
-        }
-
-        .progress-step.done .step-dot {
-            background: var(--success);
-            border-color: var(--success);
-            color: #fff;
-        }
-
-        .progress-line {
-            flex: 1;
-            height: 1px;
-            background: var(--border);
-            margin: 0 8px;
-        }
-
-        /* Card */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 32px;
-            margin-bottom: 16px;
-        }
-
-        .card-title {
-            font-size: 18px; font-weight: 600;
-            letter-spacing: -0.4px;
-            margin-bottom: 4px;
-        }
-
-        .card-subtitle {
-            font-size: 13px; color: var(--text-secondary);
-            line-height: 1.6; margin-bottom: 24px;
-        }
-
-        /* Alert */
-        .alert {
-            padding: 12px 14px;
-            border-radius: var(--radius);
-            font-size: 13px;
-            margin-bottom: 20px;
-            line-height: 1.5;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .alert-warning {
-            background: var(--warning-bg);
-            border: 1px solid #F5CBA7;
-            color: var(--warning);
-        }
-
-        .alert-error {
-            background: var(--error-bg);
-            border: 1px solid #F5C6C2;
-            color: var(--error);
-        }
-
-        .alert svg {
-            width: 15px; height: 15px;
-            flex-shrink: 0; margin-top: 1px;
-            stroke: currentColor; fill: none;
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            overflow: hidden;
-            margin-bottom: 24px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 13px;
-            font-weight: 500;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all var(--transition);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-        }
-
-        .tab-btn svg {
-            width: 14px; height: 14px;
-            stroke: currentColor; fill: none;
-            stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        .tab-btn:not(:last-child) {
-            border-right: 1px solid var(--border);
-        }
-
-        .tab-btn.active {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        /* Tab content */
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        /* QR Code */
-        .qr-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-            padding: 24px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-        }
-
-        .qr-image {
-            width: 180px; height: 180px;
-            border: 4px solid #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-
-        .qr-caption {
-            font-size: 12px;
-            color: var(--text-secondary);
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        /* Manual key */
-        .manual-container {
-            padding: 20px;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-        }
-
-        .manual-steps {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 20px;
-        }
-
-        .manual-steps li {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        .step-num {
-            width: 22px; height: 22px;
-            background: var(--accent);
-            color: #fff;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 600;
-            flex-shrink: 0;
-            margin-top: 1px;
-        }
-
-        .key-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 14px 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-
-        .key-value {
-            font-family: 'DM Mono', monospace;
-            font-size: 17px;
-            letter-spacing: 4px;
-            color: var(--text-primary);
-            font-weight: 500;
-            word-break: break-all;
-        }
-
-        .copy-btn {
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 6px 12px;
-            font-family: 'DM Sans', sans-serif;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all var(--transition);
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .copy-btn.copied { border-color: var(--success); color: var(--success); }
-
-        .copy-btn svg {
-            width: 12px; height: 12px;
-            stroke: currentColor; fill: none;
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        .key-note {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .key-note svg {
-            width: 11px; height: 11px;
-            stroke: currentColor; fill: none;
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-            flex-shrink: 0;
-        }
-
-        /* App download */
-        .app-links {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .app-link {
-            flex: 1;
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all var(--transition);
-        }
-
-        .app-link:hover { border-color: var(--accent); color: var(--accent); }
-
-        .app-link svg {
-            width: 13px; height: 13px;
-            stroke: currentColor; fill: none;
-            stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        /* Divider */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 24px 0;
-        }
-
-        /* OTP Confirm section */
-        .confirm-title {
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-
-        .confirm-sub {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 14px;
-            line-height: 1.5;
-        }
-
-        .form-group { margin-bottom: 0; }
-
-        .form-label {
-            display: block;
-            font-size: 11px; font-weight: 500;
-            color: var(--text-secondary);
-            letter-spacing: 0.4px;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .otp-input {
-            width: 100%;
-            height: 48px;
-            padding: 0 16px;
-            background: #FAFAF8;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-family: 'DM Mono', monospace;
-            font-size: 22px;
-            letter-spacing: 10px;
-            text-align: center;
-            color: var(--text-primary);
-            outline: none;
-            transition: border-color var(--transition), box-shadow var(--transition);
-            -webkit-appearance: none;
-        }
-
-        .otp-input:focus {
-            border-color: var(--border-focus);
-            background: var(--surface);
-            box-shadow: 0 0 0 3px rgba(26,26,26,0.06);
-        }
-
-        .otp-input.is-error { border-color: var(--error); background: var(--error-bg); }
-
-        .field-error { font-size: 12px; color: var(--error); margin-top: 5px; }
-
-        /* Submit */
-        .btn-submit {
-            width: 100%;
-            height: 44px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: var(--radius);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px; font-weight: 500;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            gap: 8px;
-            margin-top: 14px;
-            transition: background var(--transition), box-shadow var(--transition);
-        }
-
-        .btn-submit:hover { background: var(--accent-hover); box-shadow: 0 4px 12px rgba(26,26,26,0.15); }
-        .btn-submit:active { transform: scale(0.99); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-
-        .btn-submit svg {
-            width: 15px; height: 15px;
-            stroke: currentColor; fill: none;
-            stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
-        }
-
-        .spinner {
-            width: 15px; height: 15px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .btn-submit.loading .spinner { display: block; }
-        .btn-submit.loading .btn-text,
-        .btn-submit.loading .btn-icon { display: none; }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 20px;
-        }
-
-        .footer a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
-
-        .footer a:hover { color: var(--text-primary); }
-    </style>
+    </script>
 </head>
-<body>
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-start py-12 px-6 relative overflow-hidden transition-colors duration-300">
+    
+    <!-- Background Decorative Gradients -->
+    <div class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-3xl -z-10 animate-pulse pointer-events-none"></div>
+    <div class="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-slate-300/20 dark:bg-slate-800/10 blur-3xl -z-10 animate-pulse pointer-events-none" style="animation-delay: 2s;"></div>
 
-<div class="wrapper">
+    <!-- Theme Toggle Floating Button -->
+    <button id="theme-toggle" class="fixed top-6 right-6 p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg text-slate-700 dark:text-slate-300 hover:scale-105 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all duration-200 z-50" aria-label="Toggle Theme">
+        <!-- Sun Icon -->
+        <svg id="sun-icon" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+        </svg>
+        <!-- Moon Icon -->
+        <svg id="moon-icon" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+    </button>
 
-    {{-- Brand --}}
-    <div class="brand">
-        <div class="brand-icon">
-            <svg viewBox="0 0 24 24">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
-                <line x1="3" y1="6" x2="21" y2="6"/>
-                <path d="M16 10a4 4 0 01-8 0"/>
-            </svg>
-        </div>
-        <div>
-            <div class="brand-name">AmandaMart</div>
-            <div class="brand-sub">B2B Supplier Portal</div>
-        </div>
-    </div>
-
-    {{-- Progress --}}
-    <div class="progress">
-        <div class="progress-step done">
-            <div class="step-dot">
-                <svg viewBox="0 0 24 24" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg>
+    <!-- Main Wrapper -->
+    <div class="w-full max-w-lg transition-all duration-300">
+        
+        <!-- Brand -->
+        <div class="flex items-center gap-3 mb-8 justify-center">
+            <div class="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-extrabold shadow-md">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
             </div>
-            <span>Login</span>
-        </div>
-        <div class="progress-line"></div>
-        <div class="progress-step active">
-            <div class="step-dot">2</div>
-            <span>Setup 2FA</span>
-        </div>
-        <div class="progress-line"></div>
-        <div class="progress-step">
-            <div class="step-dot">3</div>
-            <span>Selesai</span>
-        </div>
-    </div>
-
-    {{-- Card --}}
-    <div class="card">
-        <div class="card-title">Setup Google Authenticator</div>
-        <div class="card-subtitle">
-            Halo, <strong>{{ $username }}</strong>! Ini adalah pertama kalinya kamu login.
-            Sambungkan akun ke Google Authenticator untuk mengamankan akses kamu.
-        </div>
-
-        {{-- Alert error --}}
-        @if ($errors->any())
-            <div class="alert alert-error">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <span>{{ $errors->first() }}</span>
-            </div>
-        @endif
-
-        {{-- Belum punya Google Authenticator? --}}
-        <div class="alert alert-warning">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
-                <strong>Belum punya Google Authenticator?</strong><br>
-                Download dulu aplikasinya di HP kamu:
-                <div class="app-links">
-                    <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" class="app-link">
-                        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M8 12l4-7 4 7"/><path d="M8 12h8"/></svg>
-                        Android
-                    </a>
-                    <a href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" class="app-link">
-                        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z"/><path d="M9 12l2 2 4-4"/></svg>
-                        iPhone
-                    </a>
-                </div>
+                <h1 class="text-lg font-extrabold text-slate-800 dark:text-white leading-none">AMANDA<span class="text-blue-600 dark:text-blue-500">mart</span></h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Portal B2B Supplier & Vendor</p>
             </div>
         </div>
 
-        {{-- Tabs --}}
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('qr', this)">
-                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
-                Scan QR Code
-            </button>
-            <button class="tab-btn" onclick="switchTab('manual', this)">
-                <svg viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-                Kode Manual
-            </button>
-        </div>
-
-        {{-- Tab QR Code --}}
-        <div class="tab-content active" id="tab-qr">
-            <div class="qr-container">
-                <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}"
-                    alt="QR Code 2FA"
-                    class="qr-image"
-                >
-                <div class="qr-caption">
-                    Buka Google Authenticator → Tap <strong>"+"</strong> → <strong>"Scan QR Code"</strong><br>
-                    Arahkan kamera ke gambar di atas
+        <!-- Progress Steps -->
+        <div class="flex items-center justify-between mb-8 px-4">
+            <div class="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <div class="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-[10px]">
+                    ✓
                 </div>
+                <span>Login</span>
+            </div>
+            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-3"></div>
+            <div class="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
+                <div class="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm">
+                    2
+                </div>
+                <span>Setup 2FA</span>
+            </div>
+            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-3"></div>
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-600">
+                <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px]">
+                    3
+                </div>
+                <span>Selesai</span>
             </div>
         </div>
 
-        {{-- Tab Manual Key --}}
-        <div class="tab-content" id="tab-manual">
-            <div class="manual-container">
-                <ul class="manual-steps">
-                    <li>
-                        <div class="step-num">1</div>
-                        <span>Buka aplikasi <strong>Google Authenticator</strong> di HP kamu</span>
-                    </li>
-                    <li>
-                        <div class="step-num">2</div>
-                        <span>Tap tombol <strong>"+"</strong> di pojok kanan bawah</span>
-                    </li>
-                    <li>
-                        <div class="step-num">3</div>
-                        <span>Pilih <strong>"Enter a setup key"</strong></span>
-                    </li>
-                    <li>
-                        <div class="step-num">4</div>
-                        <span>Isi <strong>Account name</strong> dengan nama kamu, lalu masukkan kode di bawah ini ke kolom <strong>Key</strong></span>
-                    </li>
-                </ul>
+        <!-- Card Container -->
+        <div class="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 p-6 sm:p-8 mb-6 transition-all duration-300">
+            
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                Setup Google Authenticator
+            </h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                Halo, <strong class="text-slate-800 dark:text-slate-200 font-semibold">{{ $username }}</strong>! Ini adalah pertama kalinya Anda masuk ke sistem. Silakan sambungkan akun Anda ke Google Authenticator untuk verifikasi keamanan dua faktor (2FA).
+            </p>
 
-                <div class="key-box">
-                    <div class="key-value" id="secretKeyDisplay">
-                        {{ implode(' ', str_split($secretKey, 4)) }}
+            <!-- Error Alerts -->
+            @if ($errors->any())
+                <div class="p-4 my-4 text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl flex items-start space-x-2" role="alert">
+                    <svg class="h-4 w-4 text-rose-600 dark:text-rose-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>{{ $errors->first() }}</span>
+                </div>
+            @endif
+
+            <!-- Warning Info Box -->
+            <div class="p-4 my-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-2xl flex items-start gap-3 text-xs text-amber-800 dark:text-amber-400 leading-relaxed">
+                <svg class="h-5 w-5 text-amber-600 dark:text-amber-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <strong class="font-bold">Belum memiliki Google Authenticator?</strong><br>
+                    Unduh aplikasi terlebih dahulu pada ponsel cerdas Anda:
+                    <div class="flex gap-2 mt-2">
+                        <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" class="flex-1 py-1.5 px-3 border border-slate-200 dark:border-slate-800 rounded-lg hover:border-slate-400 text-slate-600 dark:text-slate-300 text-center font-bold text-[10px] bg-white dark:bg-slate-950 transition-colors">
+                            Android Google Play
+                        </a>
+                        <a href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" class="flex-1 py-1.5 px-3 border border-slate-200 dark:border-slate-800 rounded-lg hover:border-slate-400 text-slate-600 dark:text-slate-300 text-center font-bold text-[10px] bg-white dark:bg-slate-950 transition-colors">
+                            iOS App Store
+                        </a>
                     </div>
-                    <button class="copy-btn" id="copyBtn" onclick="copyKey()">
-                        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                        Salin
-                    </button>
-                </div>
-
-                <div class="key-note">
-                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                    Jangan bagikan kode ini ke siapapun termasuk admin
                 </div>
             </div>
-        </div>
 
-        <div class="divider"></div>
-
-        {{-- Konfirmasi OTP --}}
-        <div class="confirm-title">Konfirmasi Koneksi</div>
-        <div class="confirm-sub">
-            Setelah scan QR Code atau masukkan kode manual, masukkan 6 digit kode yang muncul di Google Authenticator untuk memastikan setup berhasil.
-        </div>
-
-        <form id="setupForm" method="POST" action="{{ route('2fa.setup.confirm') }}">
-            @csrf
-            <div class="form-group">
-                <label class="form-label" for="otp">Kode dari Google Authenticator</label>
-                <input
-                    type="text"
-                    id="otp"
-                    name="otp"
-                    class="otp-input @error('otp') is-error @enderror"
-                    placeholder="000000"
-                    maxlength="6"
-                    inputmode="numeric"
-                    pattern="[0-9]{6}"
-                    autocomplete="one-time-code"
-                    autofocus
-                    required
-                >
-                @error('otp')
-                    <div class="field-error">{{ $message }}</div>
-                @enderror
+            <!-- Tab Switching Buttons -->
+            <div class="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-5 bg-slate-50 dark:bg-slate-950/40 p-1">
+                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active-tab" id="tab-btn-qr" onclick="switchTab('qr')">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                    Pindai QR Code
+                </button>
+                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-300" id="tab-btn-manual" onclick="switchTab('manual')">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    </svg>
+                    Kunci Manual
+                </button>
             </div>
 
-            <button type="submit" class="btn-submit" id="submitBtn">
-                <div class="spinner"></div>
-                <svg class="btn-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                <span class="btn-text">Konfirmasi & Aktifkan 2FA</span>
-            </button>
-        </form>
+            <!-- Tab Content: QR Code -->
+            <div id="tab-content-qr" class="block">
+                <div class="flex flex-col items-center gap-4 p-5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl mb-5">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}" alt="QR Code 2FA" class="w-48 h-48 border-4 border-white dark:border-slate-900 rounded-xl shadow-md">
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">
+                        Pindai kode QR di atas dengan membuka aplikasi <strong class="text-slate-800 dark:text-slate-200">Google Authenticator</strong>, tekan tombol <strong class="text-slate-800 dark:text-slate-200">"+"</strong>, lalu pilih <strong class="text-slate-800 dark:text-slate-200">"Scan QR Code"</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Tab Content: Manual Key -->
+            <div id="tab-content-manual" class="hidden">
+                <div class="p-5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl mb-5 space-y-4 text-xs">
+                    <ol class="list-decimal pl-4 space-y-2 text-slate-600 dark:text-slate-400 leading-relaxed">
+                        <li>Buka aplikasi <strong>Google Authenticator</strong> di ponsel Anda.</li>
+                        <li>Tekan ikon tambah <strong>"+"</strong> di bagian kanan bawah.</li>
+                        <li>Pilih opsi <strong>"Enter a setup key"</strong>.</li>
+                        <li>Masukkan nama akun (misal: AmandaMart) dan isi kolom <strong>Key</strong> dengan kode di bawah.</li>
+                    </ol>
+
+                    <div class="flex items-center justify-between p-3.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl gap-3">
+                        <span class="font-mono text-base font-semibold tracking-widest text-slate-900 dark:text-white" id="secretKeyDisplay">
+                            {{ implode(' ', str_split($secretKey, 4)) }}
+                        </span>
+                        <button type="button" class="py-1.5 px-3 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 text-[10px] font-bold rounded-lg text-slate-600 dark:text-slate-300 transition-colors flex items-center gap-1" id="copyBtn" onclick="copyKey()">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Salin
+                        </button>
+                    </div>
+
+                    <div class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
+                        <svg class="h-3.5 w-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Rahasiakan kunci manual ini demi keamanan akun Anda.
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-slate-200 dark:border-slate-800 my-5">
+
+            <!-- OTP Confirmation Form -->
+            <form id="setupForm" method="POST" action="{{ route('2fa.setup.confirm') }}" class="space-y-4">
+                @csrf
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2" for="otp">
+                        Kode Konfirmasi OTP
+                    </label>
+                    <input
+                        type="text"
+                        id="otp"
+                        name="otp"
+                        class="w-full py-3 text-center text-2xl font-mono font-bold tracking-[0.75em] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition duration-200 text-slate-900 dark:text-white"
+                        placeholder="000000"
+                        maxlength="6"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        autocomplete="one-time-code"
+                        autofocus
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98] transition-all duration-200 text-sm flex items-center justify-center gap-2" id="submitBtn">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Konfirmasi & Aktifkan 2FA
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center text-xs text-slate-400 dark:text-slate-500">
+            Butuh bantuan? Silakan hubungi tim IT Administrator &mdash; 
+            <a href="{{ route('login') }}" class="underline hover:text-slate-600 dark:hover:text-slate-300">Kembali ke Login</a>
+        </div>
     </div>
 
-    <div class="footer">
-        Butuh bantuan? Hubungi admin &mdash;
-        <a href="{{ route('login') }}">Kembali ke Login</a>
-    </div>
+    <!-- Scripting for Tabs, Copy and Theme Switcher -->
+    <script>
+        // Tab Switcher
+        function switchTab(mode) {
+            const qrBtn = document.getElementById('tab-btn-qr');
+            const manualBtn = document.getElementById('tab-btn-manual');
+            const qrContent = document.getElementById('tab-content-qr');
+            const manualContent = document.getElementById('tab-content-manual');
 
-</div>
+            const activeClass = ['bg-white', 'dark:bg-slate-900', 'shadow-sm', 'text-slate-900', 'dark:text-white'];
+            const inactiveClass = ['text-slate-400', 'dark:text-slate-600', 'hover:text-slate-800', 'dark:hover:text-slate-300'];
 
-<script>
-    // Switch tab
-    function switchTab(tab, btn) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById('tab-' + tab).classList.add('active');
-        btn.classList.add('active');
-    }
+            if (mode === 'qr') {
+                qrBtn.classList.add(...activeClass);
+                qrBtn.classList.remove(...inactiveClass);
+                manualBtn.classList.remove(...activeClass);
+                manualBtn.classList.add(...inactiveClass);
+                qrContent.classList.replace('hidden', 'block');
+                manualContent.classList.replace('block', 'hidden');
+            } else {
+                manualBtn.classList.add(...activeClass);
+                manualBtn.classList.remove(...inactiveClass);
+                qrBtn.classList.remove(...activeClass);
+                qrBtn.classList.add(...inactiveClass);
+                manualContent.classList.replace('hidden', 'block');
+                qrContent.classList.replace('block', 'hidden');
+            }
+        }
 
-    // Copy key
-    function copyKey() {
-        const key = '{{ $secretKey }}';
-        navigator.clipboard.writeText(key).then(() => {
-            const btn = document.getElementById('copyBtn');
-            btn.classList.add('copied');
-            btn.innerHTML = `
-                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                Tersalin!
-            `;
-            setTimeout(() => {
-                btn.classList.remove('copied');
+        // Initialize Tab Visuals
+        switchTab('qr');
+
+        // Copy Key Functionality
+        function copyKey() {
+            const secret = '{{ $secretKey }}';
+            navigator.clipboard.writeText(secret).then(() => {
+                const btn = document.getElementById('copyBtn');
                 btn.innerHTML = `
-                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                    Salin
+                    <svg class="h-3.5 w-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Tersalin!
                 `;
-            }, 2000);
+                btn.classList.add('border-emerald-300', 'bg-emerald-50', 'text-emerald-700', 'dark:bg-emerald-950/20', 'dark:border-emerald-900/50');
+                setTimeout(() => {
+                    btn.innerHTML = `
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Salin
+                    `;
+                    btn.classList.remove('border-emerald-300', 'bg-emerald-50', 'text-emerald-700', 'dark:bg-emerald-950/20', 'dark:border-emerald-900/50');
+                }, 2000);
+            });
+        }
+
+        // Only Numbers in OTP Input
+        document.getElementById('otp').addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
         });
-    }
 
-    // OTP: only numbers
-    document.getElementById('otp').addEventListener('input', function () {
-        this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
-    });
+        // Loading Spinner on Submit
+        document.getElementById('setupForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = `
+                <div class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Memproses Setup...
+            `;
+        });
 
-    // Loading state
-    document.getElementById('setupForm').addEventListener('submit', function () {
-        const btn = document.getElementById('submitBtn');
-        btn.classList.add('loading');
-        btn.disabled = true;
-    });
-</script>
+        // Theme Switcher Code
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
 
+        function updateIcons() {
+            if (document.documentElement.classList.contains('dark')) {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            } else {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            }
+        }
+
+        updateIcons();
+
+        themeToggleBtn.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+            }
+            updateIcons();
+        });
+    </script>
 </body>
 </html>

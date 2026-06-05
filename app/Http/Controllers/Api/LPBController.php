@@ -15,9 +15,11 @@ class LPBController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        // TAMBAHKAN 'items.product' di sini agar qty_ordered & qty_received muncul di daftar
-        $lpbs = GoodsReceipt::with(['purchaseOrder', 'distributionCenter', 'items.product'])
-            ->where('supplier_id', $supplierId)
+        $lpbs = GoodsReceipt::with(['purchaseOrder.product'])
+            ->whereHas('purchaseOrder.offers', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id)
+                      ->where('status', 'accepted');
+            })
             ->latest()
             ->get();
 
@@ -28,16 +30,18 @@ class LPBController extends Controller
     }
 
     /**
-     * Menampilkan detail item di dalam satu LPB
+     * Menampilkan detail satu LPB
      */
     public function show(Request $request, $id)
     {
         $supplierId = $request->user()->supplier_id;
 
-        // Cari LPB dan pastikan milik supplier ini
-        $lpb = GoodsReceipt::with(['purchaseOrder', 'distributionCenter', 'items.product'])
-            ->where('supplier_id', $supplierId)
-            ->find($id); // Pakai find agar bisa kita handle jika null
+        $lpb = GoodsReceipt::with(['purchaseOrder.product'])
+            ->whereHas('purchaseOrder.offers', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id)
+                      ->where('status', 'accepted');
+            })
+            ->find($id);
 
         if (!$lpb) {
             return response()->json([
@@ -50,5 +54,54 @@ class LPBController extends Controller
             'status' => 'success',
             'data' => $lpb
         ]);
+    }
+
+    /**
+     * Menyimpan penerimaan barang (LPB) beserta retur jika ada
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'purchase_order_id' => 'required|exists:purchase_orders,id',
+            'qty_received'      => 'required|integer|min:0',
+            'qty_retur'         => 'nullable|integer|min:0',
+            'reason'            => 'required_if:qty_retur,>0|string|nullable',
+            'barcode'           => 'nullable|string',
+            'received_at'       => 'nullable|date',
+        ]);
+
+        $po = \App\Models\PurchaseOrder::findOrFail($request->purchase_order_id);
+        $barcode = $request->barcode ?? strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $po->product->name));
+        $receivedAt = $request->received_at ?? now();
+
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $po, $barcode, $receivedAt) {
+            // 1. Catat Goods Receipt
+            $goodsReceipt = GoodsReceipt::create([
+                'purchase_order_id' => $po->id,
+                'qty_received'      => $request->qty_received,
+                'received_at'       => $receivedAt,
+                'barcode'           => $barcode,
+            ]);
+
+            // 2. Catat Retur jika ada qty_retur > 0
+            $retur = null;
+            if ($request->filled('qty_retur') && $request->qty_retur > 0) {
+                $retur = \App\Models\Retur::create([
+                    'goods_receipt_id' => $goodsReceipt->id,
+                    'product_id'       => $po->product_id,
+                    'qty_retur'        => $request->qty_retur,
+                    'reason'           => $request->reason,
+                ]);
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'LPB dan Retur berhasil dicatat.',
+                'data'    => [
+                    'goods_receipt' => $goodsReceipt,
+                    'retur'         => $retur,
+                ]
+            ], 201);
+        });
     }
 }

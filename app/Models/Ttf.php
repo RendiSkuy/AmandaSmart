@@ -8,15 +8,9 @@ class Ttf extends Model
 {
     protected $table = 'ttf'; // Karena nama tabel singkat, pastikan manual
     protected $fillable = [
-        'ttf_number', 'goods_receipt_id', 'supplier_id', 
-        'due_date', 'total_amount', 'total_deductions', 'net_amount', 'status'
+        'goods_receipt_id', 'total_amount', 'total_deductions', 'status_payment'
     ];
 
-    protected $casts = ['due_date' => 'date'];
-
-    public function supplier() {
-        return $this->belongsTo(Supplier::class);
-}
     public function goodsReceipt() {
         return $this->belongsTo(GoodsReceipt::class);
     }

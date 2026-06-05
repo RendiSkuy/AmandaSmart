@@ -12,13 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('suppliers', function (Blueprint $table) {
-    $table->id();
-    $table->string('supplier_code')->unique(); // Kode SUP-xxxx
-    $table->string('name');
-    $table->enum('status', ['active', 'inactive'])->default('active');
-    $table->string('email')->nullable();
-    $table->timestamps();
-});
+            $table->id();
+            $table->string('supplier_code')->unique();
+            $table->string('name');
+            $table->string('whatsapp_number')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

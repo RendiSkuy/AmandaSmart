@@ -6,48 +6,87 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Models\DistributionCenter;
 
 class SupplierSeeder extends Seeder
 {
     public function run(): void
     {
-        // Buat atau ambil Supplier yang sudah ada
-        $supplier = Supplier::firstOrCreate(
-            ['supplier_code' => 'SUP-001'],
+        // Data 5 Perusahaan Supplier Ritel AmandaMart
+        $companies = [
             [
-                'name'   => 'PT Unilever Indonesia',
-                'status' => 'active'
-            ]
-        );
-
-        // Buat atau ambil User — google2fa_secret dibiarkan NULL
-        // Supplier akan setup 2FA sendiri saat pertama login
-        $user = User::firstOrCreate(
-            ['username' => 'rendi_b2b'],
+                'prefix'        => 'unilever',
+                'supplier_code' => 'SUP-001',
+                'name'          => 'PT Unilever Indonesia',
+                'whatsapp'      => '628123456789'
+            ],
             [
-                'name'             => 'Rendi Admin',
-                'email'            => 'rendi@unilever.com',
-                'password'         => Hash::make('password123'),
-                'supplier_id'      => $supplier->id,
-                'role'             => 'admin',
-                'google2fa_secret' => null, // ← NULL, supplier setup sendiri
-            ]
-        );
-
-        // Buat atau ambil Distribution Center
-        DistributionCenter::firstOrCreate(
-            ['code' => 'DC01'],
+                'prefix'        => 'indofood',
+                'supplier_code' => 'SUP-002',
+                'name'          => 'PT Indofood CBP Sukses Makmur',
+                'whatsapp'      => '628987654321'
+            ],
             [
-                'name' => 'DC SUBANG',
-                'type' => 'dc'
+                'prefix'        => 'wings',
+                'supplier_code' => 'SUP-003',
+                'name'          => 'PT Wings Surya',
+                'whatsapp'      => '628555555555'
+            ],
+            [
+                'prefix'        => 'mayora',
+                'supplier_code' => 'SUP-004',
+                'name'          => 'PT Mayora Indah Tbk',
+                'whatsapp'      => '628777777777'
+            ],
+            [
+                'prefix'        => 'nestle',
+                'supplier_code' => 'SUP-005',
+                'name'          => 'PT Nestle Indonesia',
+                'whatsapp'      => '628111111111'
             ]
-        );
+        ];
 
         $this->command->info("====================================");
-        $this->command->info("User '{$user->username}' berhasil dibuat!");
-        $this->command->warn("Password : password123");
-        $this->command->warn("2FA      : Belum disetup (supplier setup mandiri saat login)");
+        
+        foreach ($companies as $comp) {
+            // 1. Buat Profil Perusahaan Supplier
+            $supplier = Supplier::firstOrCreate(
+                ['supplier_code' => $comp['supplier_code']],
+                [
+                    'name'            => $comp['name'],
+                    'whatsapp_number' => $comp['whatsapp']
+                ]
+            );
+
+            // 2. Buat 5 Akun Sales untuk masing-masing perusahaan
+            for ($i = 1; $i <= 5; $i++) {
+                $username = $comp['prefix'] . '_sales' . $i;
+                User::firstOrCreate(
+                    ['username' => $username],
+                    [
+                        'password'          => Hash::make('password123'),
+                        'role'              => 'supplier',
+                        'google_2fa_secret' => null,
+                        'supplier_id'       => $supplier->id,
+                    ]
+                );
+            }
+
+            $this->command->info("Supplier '{$comp['name']}' dengan 5 akun sales berhasil dibuat!");
+        }
+
+        // 3. Buat User Merchandiser (MD) untuk testing
+        $userMd = User::firstOrCreate(
+            ['username' => 'rendi_md'],
+            [
+                'password'          => Hash::make('password123'),
+                'role'              => 'md',
+                'google_2fa_secret' => null,
+                'supplier_id'       => null,
+            ]
+        );
+
+        $this->command->info("User Merchandiser '{$userMd->username}' berhasil dibuat!");
+        $this->command->warn("Semua Password Akun: password123");
         $this->command->info("====================================");
     }
 }

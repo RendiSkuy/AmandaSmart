@@ -11,17 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-    Schema::create('goods_receipts', function (Blueprint $table) {
-    $table->id();
-    $table->string('lpb_number')->unique(); // Nomor LPB
-    $table->foreignId('purchase_order_id')->constrained();
-    $table->foreignId('supplier_id')->constrained();
-    $table->foreignId('dc_id')->constrained('distribution_centers');
-    $table->enum('status', ['received', 'cancelled'])->default('received');
-    $table->boolean('is_read')->default(false); // Flag untuk supplier
-    $table->timestamp('received_at');
-    $table->timestamps();
-});
+        Schema::create('goods_receipts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('purchase_order_id')->constrained('purchase_orders')->onDelete('cascade');
+            $table->integer('qty_received');
+            $table->timestamp('received_at')->nullable();
+            $table->string('barcode')->nullable();
+            $table->timestamps();
+        });
     }
 
     /**

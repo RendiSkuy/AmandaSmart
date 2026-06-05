@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Ttf;
 use App\Models\GoodsReceipt;
+use App\Models\Offer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class TTFController extends Controller
 {
@@ -17,10 +17,22 @@ class TTFController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        $ttfs = Ttf::with(['goodsReceipt.purchaseOrder'])
-            ->where('supplier_id', $supplierId)
-            ->latest()
-            ->get();
+        $query = Ttf::with(['goodsReceipt.purchaseOrder.product'])->latest();
+
+        if ($request->user()->role === 'md') {
+            if ($request->has('supplier_id')) {
+                $query->whereHas('goodsReceipt.purchaseOrder', function ($q) use ($request) {
+                    $q->where('selected_supplier_id', $request->supplier_id);
+                });
+            }
+        } else {
+            $query->whereHas('goodsReceipt.purchaseOrder.offers', function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id)
+                  ->where('status', 'accepted');
+            });
+        }
+
+        $ttfs = $query->get();
 
         return response()->json([
             'status' => 'success',
@@ -29,8 +41,7 @@ class TTFController extends Controller
     }
 
     /**
-     * Simulasi Generate TTF dari LPB (Untuk Testing)
-     * Biasanya ini dipicu saat supplier klik "Ajukan Tagihan"
+     * Pembuatan TTF dari LPB (Mengajukan Tagihan)
      */
     public function store(Request $request)
     {
@@ -38,35 +49,53 @@ class TTFController extends Controller
             'goods_receipt_id' => 'required|exists:goods_receipts,id'
         ]);
 
-        $lpb = GoodsReceipt::with('items')->findOrFail($request->goods_receipt_id);
+        // Ambil LPB beserta data PO terkait
+        $lpb = GoodsReceipt::with(['purchaseOrder.product', 'retur'])->findOrFail($request->goods_receipt_id);
         
-        // Pastikan LPB milik supplier yang login
-        if ($lpb->supplier_id !== $request->user()->supplier_id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $supplierId = $lpb->purchaseOrder->selected_supplier_id;
+
+        if (!$supplierId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Supplier tidak ditemukan untuk PO ini.'
+            ], 422);
         }
 
-        // Hitung total_amount dari items LPB (Qty Received * Harga)
-        $totalAmount = $lpb->items->sum(function($item) {
-            return $item->qty_received * $item->unit_price;
-        });
+        // Ambil harga penawaran supplier yang diterima (accepted offer)
+        $acceptedOffer = Offer::where('purchase_order_id', $lpb->purchase_order_id)
+            ->where('supplier_id', $supplierId)
+            ->where('status', 'accepted')
+            ->first();
 
-        // Simulasi: Jatuh tempo 30 hari dari sekarang (TOP 30)
-        $dueDate = now()->addDays(30);
+        if (!$acceptedOffer) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Harga penawaran yang disetujui (accepted offer) tidak ditemukan untuk PO ini.'
+            ], 422);
+        }
+
+        $pricePerPcs = $acceptedOffer->price_per_pcs;
+
+        // Hitung total kotor: qty_received * harga penawaran
+        $totalAmount = $lpb->qty_received * $pricePerPcs;
+
+        // Hitung potongan denda/retur jika ada barang yang diretur
+        $qtyRetur = $lpb->retur ? $lpb->retur->qty_retur : 0;
+        $totalDeductions = $qtyRetur * $pricePerPcs;
+
+        // Total Bayar = Nominal kotor - Potongan denda
+        $finalPayment = $totalAmount - $totalDeductions;
 
         $ttf = Ttf::create([
-            'ttf_number' => 'TTF-' . date('Ymd') . '-' . str_pad($lpb->id, 4, '0', STR_PAD_LEFT),
             'goods_receipt_id' => $lpb->id,
-            'supplier_id' => $lpb->supplier_id,
-            'due_date' => $dueDate,
-            'total_amount' => $totalAmount,
-            'total_deductions' => 0, // Bisa diisi nanti jika ada pinalti
-            'net_amount' => $totalAmount,
-            'status' => 'pending'
+            'total_amount'     => $finalPayment,
+            'total_deductions' => $totalDeductions,
+            'status_payment'   => 'pending'
         ]);
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Tagihan (TTF) berhasil dibuat',
+            'message' => 'Tagihan (TTF) berhasil diajukan.',
             'data' => $ttf
         ]);
     }

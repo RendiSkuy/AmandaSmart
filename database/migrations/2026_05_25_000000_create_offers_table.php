@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vrs_schedules', function (Blueprint $table) {
+        Schema::create('offers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('purchase_order_id')->constrained('purchase_orders')->onDelete('cascade');
-            $table->date('scheduled_date');
-            $table->string('time_slot');
-            $table->string('status')->default('booked');
-            $table->timestamp('actual_arrival_at')->nullable();
+            $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->decimal('price_per_pcs', 15, 2);
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vrs_schedules');
+        Schema::dropIfExists('offers');
     }
 };

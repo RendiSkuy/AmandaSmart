@@ -9,20 +9,15 @@ class Supplier extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['supplier_code', 'name', 'status', 'email'];
-
-    // Relasi: Satu supplier memiliki banyak produk (untuk rumus PB)
-    public function products() {
-        return $this->hasMany(Product::class);
-    }
+    protected $fillable = ['supplier_code', 'name', 'whatsapp_number'];
 
     // Relasi: Satu supplier memiliki banyak PO
     public function purchaseOrders() {
-        return $this->hasMany(PurchaseOrder::class);
+        return $this->hasMany(PurchaseOrder::class, 'selected_supplier_id');
     }
 
-    // Relasi: Satu supplier memiliki banyak user (akun staf supplier)
+    // Relasi: Satu supplier memiliki banyak akun user/sales
     public function users() {
-        return $this->hasMany(User::class);
+        return $this->hasMany(User::class, 'supplier_id');
     }
 }

@@ -3,26 +3,45 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Str;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseOrderItem;
+use App\Models\Offer;
 use App\Models\Product;
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderController extends Controller
 {
     /**
-     * READ: Menampilkan daftar PO (Akses via DB Slave/Read Connection jika ada)
+     * READ: Menampilkan daftar PO milik supplier yang login atau PO pending terbuka
      */
     public function index(Request $request)
     {
-        $supplierId = $request->user()->supplier_id;
+        $supplier = $request->user()->supplier;
+        if (!$supplier) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Profil supplier tidak ditemukan.'
+            ], 403);
+        }
 
-        $pos = PurchaseOrder::with(['dc', 'items.product']) 
-            ->withCount('items')
-            ->where('supplier_id', $supplierId)
+        $supplierId = $supplier->id;
+        $supplierCode = $supplier->supplier_code;
+
+        // Ambil PO yang terikat ke supplier ini (dimenangkan oleh user sales ini) ATAU PO pending untuk barang milik supplier ini saja
+        $pos = PurchaseOrder::with(['product']) 
+            ->where(function ($q) use ($supplierId, $request) {
+                $q->where('selected_supplier_id', $supplierId)
+                  ->whereHas('offers', function ($qo) use ($request) {
+                      $qo->where('user_id', $request->user()->id)
+                         ->where('status', 'accepted');
+                  });
+            })
+            ->orWhere(function ($q) use ($supplierCode) {
+                $q->where('status', 'PENDING_BIDDING')
+                  ->whereHas('product', function ($qp) use ($supplierCode) {
+                      $qp->where('plu_code', 'like', $supplierCode . '%');
+                  });
+            })
             ->latest()
             ->get();
 
@@ -34,7 +53,6 @@ class PurchaseOrderController extends Controller
 
     /**
      * CREATE: Generate PO Otomatis menggunakan Stored Procedure
-     * Sesuai instruksi: Logic PB dipindah ke Database Layer (PostgreSQL)
      */
     public function generateAutoPO(Request $request)
     {
@@ -42,10 +60,7 @@ class PurchaseOrderController extends Controller
         $userId = $request->user()->id;
 
         try {
-            // Membungkus dalam transaksi untuk menjaga konsistensi data (Atomic)
             DB::transaction(function () use ($supplierId, $userId) {
-                // Memanggil Procedure 'generate_auto_po_proc' di PostgreSQL
-                // Parameter: 1. ID Supplier, 2. ID User (untuk trigger notif di DB)
                 DB::statement('CALL generate_auto_po_proc(?, ?)', [$supplierId, $userId]);
             });
 
@@ -55,9 +70,6 @@ class PurchaseOrderController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            /** * Menangkap error dari database (misal RAISE EXCEPTION 'Stok mencukupi')
-             * Kita membersihkan pesan error agar lebih rapi dilihat di Postman
-             */
             $errorMessage = $e->getMessage();
             if (str_contains($errorMessage, 'Semua stok mencukupi')) {
                 $errorMessage = 'Semua stok masih mencukupi, tidak ada PO yang dibuat.';
@@ -66,7 +78,7 @@ class PurchaseOrderController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Pesan dari DB: ' . $errorMessage
-            ], 422); // Gunakan code 422 untuk validation error dari DB
+            ], 422);
         }
     }
 
@@ -75,10 +87,33 @@ class PurchaseOrderController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $supplierId = $request->user()->supplier_id;
+        $supplier = $request->user()->supplier;
+        if (!$supplier) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Profil supplier tidak ditemukan.'
+            ], 403);
+        }
 
-        $po = PurchaseOrder::with(['items.product', 'dc'])
-            ->where('supplier_id', $supplierId)
+        $supplierId = $supplier->id;
+        $supplierCode = $supplier->supplier_code;
+
+        $po = PurchaseOrder::with(['product'])
+            ->where(function($query) use ($supplierId, $supplierCode, $request) {
+                $query->where(function ($q) use ($supplierId, $request) {
+                    $q->where('selected_supplier_id', $supplierId)
+                      ->whereHas('offers', function ($qo) use ($request) {
+                          $qo->where('user_id', $request->user()->id)
+                             ->where('status', 'accepted');
+                      });
+                })
+                ->orWhere(function ($q) use ($supplierCode) {
+                    $q->where('status', 'PENDING_BIDDING')
+                      ->whereHas('product', function ($qp) use ($supplierCode) {
+                          $qp->where('plu_code', 'like', $supplierCode . '%');
+                      });
+                });
+            })
             ->findOrFail($id);
 
         return response()->json([
@@ -88,53 +123,87 @@ class PurchaseOrderController extends Controller
     }
 
     /**
-     * UPDATE: Penyesuaian Qty oleh Supplier
-     * Tetap menggunakan logic Laravel untuk validasi input cepat (Application Layer)
+     * UPDATE: Pengajuan Penawaran Harga (Bidding) oleh Supplier
      */
-    public function updateItem(Request $request, $id)
+    public function submitOffer(Request $request, $id)
     {
-        // Cari detail item PO beserta relasi produknya
-        $item = PurchaseOrderItem::with(['product', 'purchaseOrder'])->findOrFail($id);
+        $supplierId = $request->user()->supplier_id;
         
         $request->validate([
-            'qty_ordered' => 'required|integer|min:0'
+            'price_per_pcs' => 'required|numeric|min:0'
         ]);
 
-        $newQty = $request->qty_ordered;
-        $product = $item->product;
+        $po = PurchaseOrder::findOrFail($id);
 
-        // 1. VALIDASI LOGISTIK (MINOR): Memastikan efisiensi pengiriman
-        if ($newQty % $product->minor !== 0) {
+        if ($po->status !== 'PENDING_BIDDING') {
             return response()->json([
                 'status' => 'error',
-                'message' => "Jumlah harus kelipatan dari Minor ({$product->minor} pcs)."
+                'message' => 'PO ini sudah tidak menerima penawaran harga.'
             ], 422);
         }
 
-        // 2. VALIDASI KAPASITAS (MAX STOCK): Memastikan rak gudang muat
-        if (($newQty + $product->on_hand) > $product->max_stock) {
-            return response()->json([
-                'status' => 'error',
-                'message' => "Jumlah terlalu banyak! Sisa kapasitas rak hanya muat " . ($product->max_stock - $product->on_hand) . " pcs lagi."
-            ], 422);
-        }
-
-        // Simpan perubahan ke database
-        $item->update(['qty_ordered' => $newQty]);
-
-        // Trigger Notifikasi ke Tabel Notification (Event-Driven)
-        Notification::create([
-            'user_id' => $request->user()->id,
-            'title' => 'Qty PO Diperbarui',
-            'body' => 'Jumlah pesanan ' . $item->purchaseOrder->po_number . ' telah disesuaikan menjadi ' . $newQty,
-            'type' => 'PO_UPDATE',
-            'reference_id' => $item->purchase_order_id
-        ]);
+        // Simpan penawaran harga dari supplier per user_id sales
+        $offer = Offer::updateOrCreate(
+            [
+                'purchase_order_id' => $po->id,
+                'user_id'           => $request->user()->id,
+            ],
+            [
+                'supplier_id'       => $supplierId,
+                'price_per_pcs'     => $request->price_per_pcs,
+                'status'            => 'pending'
+            ]
+        );
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Qty PO berhasil disesuaikan oleh Supplier',
-            'data' => $item
+            'message' => 'Penawaran harga berhasil diajukan/diperbarui.',
+            'data' => $offer
+        ]);
+    }
+
+    /**
+     * COMPARE: Menampilkan semua penawaran (offers) beserta kalkulasi harga kotor untuk PO
+     */
+    public function compareOffers($id)
+    {
+        $po = PurchaseOrder::with(['product'])->findOrFail($id);
+
+        $offers = Offer::with(['supplier', 'user'])
+            ->where('purchase_order_id', $po->id)
+            ->get();
+
+        $compareData = $offers->map(function ($offer) use ($po) {
+            $totalGrossPrice = $po->qty_po * $offer->price_per_pcs;
+            
+            return [
+                'id' => $offer->id,
+                'supplier_name' => $offer->supplier ? $offer->supplier->name : 'N/A',
+                'sales_username' => $offer->user ? $offer->user->username : 'N/A',
+                'price_per_pcs' => (float) $offer->price_per_pcs,
+                'total_gross_price' => (float) $totalGrossPrice,
+                'status' => $offer->status,
+                'created_at' => $offer->created_at,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                'purchase_order' => $po,
+                'offers' => $compareData
+            ]
+        ]);
+    }
+
+    /**
+     * Fallback method untuk markAsRead PO
+     */
+    public function markAsRead(Request $request, $id)
+    {
+        return response()->json([
+            'status' => 'success',
+            'message' => 'PO ditandai sebagai dibaca.'
         ]);
     }
 }

@@ -7,18 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Retur extends Model
 {
     protected $fillable = [
-        'retur_number', 
         'goods_receipt_id', 
-        'supplier_id', 
-        'reason', 
-        'status'
+        'product_id', 
+        'qty_retur', 
+        'reason'
     ];
-
-    // Relasi ke tabel detail (retur_items)
-    public function items()
-    {
-        return $this->hasMany(ReturItem::class, 'retur_id');
-    }
 
     // Relasi ke LPB
     public function goodsReceipt()
@@ -26,9 +19,9 @@ class Retur extends Model
         return $this->belongsTo(GoodsReceipt::class);
     }
 
-    // Relasi ke Supplier
-    public function supplier()
+    // Relasi ke Product
+    public function product()
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Product::class);
     }
 }

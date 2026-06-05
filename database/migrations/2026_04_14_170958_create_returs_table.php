@@ -10,11 +10,10 @@ return new class extends Migration
     {
         Schema::create('returs', function (Blueprint $table) {
             $table->id();
-            $table->string('retur_number')->unique();
-            $table->foreignId('goods_receipt_id')->constrained('goods_receipts'); // Merujuk ke LPB mana
-            $table->foreignId('supplier_id')->constrained();
-            $table->text('reason'); // Alasan pengembalian
-            $table->enum('status', ['pending', 'shipped', 'completed'])->default('pending');
+            $table->foreignId('goods_receipt_id')->constrained('goods_receipts')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->integer('qty_retur');
+            $table->text('reason')->nullable();
             $table->timestamps();
         });
     }

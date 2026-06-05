@@ -16,14 +16,18 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username'    => 'required',
+            'login'       => 'required',
             'password'    => 'required',
-            'otp'         => 'required|digits:6',
             'device_name' => 'required',
         ]);
 
+        $loginInput = $request->login;
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            $loginInput = explode('@', $loginInput)[0];
+        }
+
         $user = User::with('supplier')
-                    ->where('username', $request->username)
+                    ->where('username', $loginInput)
                     ->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
@@ -33,25 +37,25 @@ class AuthController extends Controller
             ], 401);
         }
 
-        if ($user->supplier && $user->supplier->status !== 'active') {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Akun Supplier tidak aktif.'
-            ], 403);
-        }
+        // OTP check only for MD
+        if ($user->role === 'md') {
+            if (!$user->google_2fa_secret) {
+                return response()->json([
+                    'status'  => '2fa_not_setup',
+                    'message' => 'Silakan setup 2FA melalui website terlebih dahulu.'
+                ], 403);
+            }
 
-        if (!$user->google2fa_secret) {
-            return response()->json([
-                'status'  => '2fa_not_setup',
-                'message' => 'Silakan setup 2FA melalui website terlebih dahulu.'
-            ], 403);
-        }
+            $request->validate([
+                'otp' => 'required|digits:6',
+            ]);
 
-        if (!Google2FA::verifyKey($user->google2fa_secret, $request->otp)) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Kode OTP tidak valid atau sudah kedaluwarsa.'
-            ], 401);
+            if (!Google2FA::verifyKey($user->google_2fa_secret, $request->otp)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Kode OTP tidak valid atau sudah kedaluwarsa.'
+                ], 401);
+            }
         }
 
         $token = $user->createToken($request->device_name)->plainTextToken;
@@ -77,9 +81,14 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        // Ambil data user fresh dari DB
+        // Ambil data user fresh dari DB (parsing email jika diinput)
+        $usernameInput = $request->username;
+        if (filter_var($usernameInput, FILTER_VALIDATE_EMAIL)) {
+            $usernameInput = explode('@', $usernameInput)[0];
+        }
+
         $user = User::with('supplier')
-                    ->where('username', $request->username)
+                    ->where('username', $usernameInput)
                     ->first();
 
         // Cek kredensial
@@ -89,16 +98,15 @@ class AuthController extends Controller
                 ->withInput();
         }
 
-        // Cek status supplier
-        if ($user->supplier && $user->supplier->status !== 'active') {
-            return back()
-                ->with('error', 'Akun Supplier Anda sedang tidak aktif.')
-                ->withInput();
+        // Jika user adalah supplier, mereka langsung masuk tanpa 2FA
+        if ($user->role === 'supplier') {
+            auth()->login($user);
+            return redirect()->intended('/dashboard');
         }
 
         // Baca secret dari DB (fresh)
-        $secret = $user->fresh()->google2fa_secret;
-        $otp    = $request->otp; // bisa kosong (user baru) atau diisi (user lama)
+        $secret = $user->fresh()->google_2fa_secret;
+        $otp    = $request->otp ?? $request->input('2fa_token'); // Cek 'otp' atau '2fa_token' dari web MD
 
         // ── User BARU: belum punya secret, OTP kosong → arahkan ke Setup ──
         if (!$secret && !$otp) {
@@ -152,7 +160,7 @@ class AuthController extends Controller
         $user = User::find($userId);
 
         // Double check: kalau sudah punya secret di DB, tolak akses setup
-        if ($user->google2fa_secret) {
+        if ($user->google_2fa_secret) {
             session()->forget(['2fa_user_id', '2fa_device_name', '2fa_secret_temp']);
             return redirect()->route('login')
                 ->with('error', 'Akun ini sudah setup 2FA. Silakan login dengan tombol Login.');
@@ -204,7 +212,7 @@ class AuthController extends Controller
 
         // OTP valid → simpan secret ke DB
         $user = User::find($userId);
-        $user->update(['google2fa_secret' => $secretKey]);
+        $user->update(['google_2fa_secret' => $secretKey]);
 
         // Bersihkan semua session 2FA sebelum login
         session()->forget(['2fa_secret_temp', '2fa_user_id', '2fa_device_name']);
@@ -230,7 +238,7 @@ class AuthController extends Controller
         $user = User::find($userId);
 
         // Kalau belum setup, arahkan ke setup
-        if (!$user->google2fa_secret) {
+        if (!$user->google_2fa_secret) {
             return redirect()->route('login')
                 ->with('error', 'Kamu belum setup Google Authenticator. Gunakan tombol Setup 2FA.');
         }
@@ -256,13 +264,13 @@ class AuthController extends Controller
         // Ambil user fresh dari DB
         $user = User::find($userId);
 
-        if (!$user || !$user->google2fa_secret) {
+        if (!$user || !$user->google_2fa_secret) {
             return redirect()->route('login')
                 ->with('error', 'Terjadi kesalahan. Silakan login ulang.');
         }
 
         // Verifikasi OTP
-        if (!Google2FA::verifyKey($user->google2fa_secret, $request->otp)) {
+        if (!Google2FA::verifyKey($user->google_2fa_secret, $request->otp)) {
             return back()->withErrors([
                 'otp' => 'Kode OTP tidak valid atau sudah kedaluwarsa. Coba kode terbaru dari Google Authenticator.'
             ]);

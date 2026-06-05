@@ -14,46 +14,31 @@ class PurchaseOrder extends Model
 
     protected $fillable = [
         'po_number',
-        'supplier_id',
-        'dc_id',
-        'type',
-        'order_date',
-        'expire_date',
+        'product_id',
+        'qty_po',
         'status',
-        'is_read',
-        'downloaded_at',
+        'selected_supplier_id',
+        'delivery_deadline',
     ];
 
     protected $casts = [
-        'order_date' => 'date',
-        'expire_date' => 'date',
-        'is_read' => 'boolean',
-        'downloaded_at' => 'datetime',
+        'delivery_deadline' => 'datetime',
     ];
 
     /**
-     * RELASI: PO ini milik satu Supplier
+     * RELASI: PO ini milik satu Supplier yang terpilih
      */
     public function supplier(): BelongsTo
     {
-        return $this->belongsTo(Supplier::class);
+        return $this->belongsTo(Supplier::class, 'selected_supplier_id');
     }
 
     /**
-     * RELASI: PO ditujukan ke satu Distribution Center (DC)
+     * RELASI: PO ini memesan satu Product
      */
-    public function dc(): BelongsTo
+    public function product(): BelongsTo
     {
-        return $this->belongsTo(DistributionCenter::class, 'dc_id');
-    }
-
-    /**
-     * RELASI: PO memiliki banyak detail barang (Items)
-     */
-    public function items()
-    {
-        // Pastikan diarahkan ke PurchaseOrderItem
-        return $this->hasMany(PurchaseOrderItem::class, 'purchase_order_id');
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     /**
@@ -65,10 +50,10 @@ class PurchaseOrder extends Model
     }
 
     /**
-     * SCOPE: Mengambil PO yang belum dibaca supplier
+     * RELASI: Satu PO dapat memiliki banyak penawaran (offers)
      */
-    public function scopeUnread($query)
+    public function offers(): HasMany
     {
-        return $query->where('is_read', false);
+        return $this->hasMany(Offer::class);
     }
 }

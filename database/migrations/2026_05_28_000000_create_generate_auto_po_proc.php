@@ -23,7 +23,7 @@ return new class extends Migration
                 po_num VARCHAR;
             BEGIN
                 FOR prod IN 
-                    SELECT id, max_stock, on_hand FROM products WHERE on_hand < max_stock
+                    SELECT id, max_stock, on_hand, minor FROM products WHERE on_hand < max_stock
                 LOOP
                     -- Cek jika draf PO dengan status PENDING_BIDDING sudah ada untuk produk ini
                     IF NOT EXISTS (
@@ -31,12 +31,19 @@ return new class extends Migration
                         WHERE product_id = prod.id 
                           AND status = 'PENDING_BIDDING'
                     ) THEN
-                        qty := prod.max_stock - prod.on_hand;
-                        -- Generate nomor PO acak yang unik
-                        po_num := 'PO-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 4)) || '-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
+                        IF prod.minor > 0 THEN
+                            qty := ( (prod.max_stock - prod.on_hand) / prod.minor ) * prod.minor;
+                        ELSE
+                            qty := prod.max_stock - prod.on_hand;
+                        END IF;
                         
-                        INSERT INTO purchase_orders (po_number, product_id, qty_po, status, selected_supplier_id, delivery_deadline, created_at, updated_at)
-                        VALUES (po_num, prod.id, qty, 'PENDING_BIDDING', NULL, CURRENT_TIMESTAMP + INTERVAL '3 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                        IF qty > 0 THEN
+                            -- Generate nomor PO acak yang unik
+                            po_num := 'PO-' || UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 4)) || '-' || TO_CHAR(CURRENT_DATE, 'YYYYMMDD');
+                            
+                            INSERT INTO purchase_orders (po_number, product_id, qty_po, status, selected_supplier_id, delivery_deadline, created_at, updated_at)
+                            VALUES (po_num, prod.id, qty, 'PENDING_BIDDING', NULL, CURRENT_TIMESTAMP + INTERVAL '3 days', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                        END IF;
                     END IF;
                 END LOOP;
             END;

@@ -459,6 +459,14 @@ class ExampleTest extends TestCase
             'status' => 'accepted',
         ]);
 
+        // Buat antrean VRS agar PO muncul di tab LPB
+        \App\Models\VrsSchedule::create([
+            'purchase_order_id' => $po->id,
+            'scheduled_date' => today()->addDays(1),
+            'time_slot' => '09:00 - 11:00',
+            'status' => 'pending',
+        ]);
+
         // 4. Akses dashboard tab lpb
         $response = $this->actingAs($md)->get('/dashboard?tab=lpb');
 

@@ -22,7 +22,7 @@ class WebDashboardController extends Controller
 
         if ($user->role === 'md') {
             $products = Product::orderBy('name')->get();
-            $purchaseOrders = PurchaseOrder::with(['product', 'supplier', 'goodsReceipt.retur', 'goodsReceipt.ttf'])
+            $purchaseOrders = PurchaseOrder::with(['product', 'supplier', 'goodsReceipt.retur', 'goodsReceipt.ttf', 'vrsSchedule'])
                 ->latest()
                 ->get();
             $offers = Offer::with(['purchaseOrder.product', 'supplier'])
@@ -288,34 +288,75 @@ class WebDashboardController extends Controller
 
     public function createVrsBooking(Request $request)
     {
-        $request->validate([
-            'purchase_order_id' => 'required|exists:purchase_orders,id',
-            'scheduled_date'    => 'required|date',
-            'time_slot'         => 'required|string'
-        ]);
-
-        $exists = VrsSchedule::where('purchase_order_id', $request->purchase_order_id)->exists();
-        if ($exists) {
-            return back()->with('error', 'Antrean logistik untuk PO ini sudah terdaftar.');
+        if ($request->has('purchase_order_id')) {
+            $request->validate([
+                'purchase_order_id' => 'required|exists:purchase_orders,id',
+                'scheduled_date'    => 'required|date',
+                'time_slot'         => 'required|string'
+            ]);
+            $poId = $request->purchase_order_id;
+            $scheduledDates = [$poId => $request->scheduled_date];
+            $timeSlots = [$poId => $request->time_slot];
+        } else {
+            $request->validate([
+                'scheduled_dates' => 'required|array',
+                'time_slots'      => 'required|array',
+            ]);
+            $scheduledDates = $request->scheduled_dates;
+            $timeSlots = $request->time_slots;
         }
 
-        // Batasi kuota antrean: Maksimal 5 truk per slot waktu di tanggal yang sama (Karena DC hanya memiliki 5 tempat)
-        $slotCount = VrsSchedule::where('scheduled_date', $request->scheduled_date)
-            ->where('time_slot', $request->time_slot)
-            ->where('status', '!=', 'cancelled')
-            ->count();
-        if ($slotCount >= 5) {
-            return back()->with('error', 'Slot waktu ' . $request->time_slot . ' pada tanggal ' . $request->scheduled_date . ' sudah penuh (Maksimal 5 truk). Silakan pilih tanggal atau slot waktu lain.');
+        $submittedCount = 0;
+        $errors = [];
+
+        foreach ($scheduledDates as $poId => $date) {
+            $slot = $timeSlots[$poId] ?? null;
+
+            if (!$date || !$slot) {
+                continue;
+            }
+
+            $po = PurchaseOrder::find($poId);
+            if (!$po || $po->status !== 'APPROVED') {
+                continue;
+            }
+
+            $exists = VrsSchedule::where('purchase_order_id', $poId)->exists();
+            if ($exists) {
+                $errors[] = "Antrean logistik untuk PO {$po->po_number} sudah terdaftar.";
+                continue;
+            }
+
+            // Batasi kuota antrean: Maksimal 5 truk per slot waktu di tanggal yang sama (Karena DC hanya memiliki 5 tempat)
+            $slotCount = VrsSchedule::where('scheduled_date', $date)
+                ->where('time_slot', $slot)
+                ->where('status', '!=', 'cancelled')
+                ->count();
+            if ($slotCount >= 5) {
+                $errors[] = "Slot waktu {$slot} pada tanggal {$date} untuk PO {$po->po_number} sudah penuh (Maksimal 5 truk).";
+                continue;
+            }
+
+            VrsSchedule::create([
+                'purchase_order_id' => $poId,
+                'scheduled_date'    => $date,
+                'time_slot'         => $slot,
+                'status'            => 'pending',
+            ]);
+
+            $submittedCount++;
         }
 
-        VrsSchedule::create([
-            'purchase_order_id' => $request->purchase_order_id,
-            'scheduled_date'    => $request->scheduled_date,
-            'time_slot'         => $request->time_slot,
-            'status'            => 'pending',
-        ]);
+        if ($submittedCount === 0) {
+            $msg = count($errors) > 0 ? implode(' ', $errors) : 'Tidak ada jadwal valid yang diisi.';
+            return back()->with('error', $msg);
+        }
 
-        return back()->with('success', 'Booking antrean logistik berhasil dibuat.');
+        $msg = "{$submittedCount} booking antrean logistik berhasil dibuat.";
+        if (count($errors) > 0) {
+            $msg .= ' Beberapa PO gagal: ' . implode(' ', $errors);
+        }
+        return back()->with('success', $msg);
     }
 
     public function storeLpb(Request $request)

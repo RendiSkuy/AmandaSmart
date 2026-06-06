@@ -49,11 +49,16 @@ class PurchaseOrder extends Model
         return $this->hasOne(GoodsReceipt::class);
     }
 
-    /**
-     * RELASI: Satu PO dapat memiliki banyak penawaran (offers)
-     */
     public function offers(): HasMany
     {
         return $this->hasMany(Offer::class);
+    }
+
+    /**
+     * RELASI: Satu PO memiliki satu jadwal VRS
+     */
+    public function vrsSchedule(): HasOne
+    {
+        return $this->hasOne(VrsSchedule::class);
     }
 }

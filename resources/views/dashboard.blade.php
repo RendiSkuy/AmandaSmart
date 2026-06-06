@@ -63,7 +63,7 @@
             $criticalCount = $products->filter(fn($p) => $p->on_hand < ($p->max_stock / 2))->count();
             $pendingBiddingCount = $purchaseOrders->where('status', 'PENDING_BIDDING')->count();
             $pendingVrsCount = $vrsSchedules->where('status', 'pending')->count();
-            $pendingLpbCount = $purchaseOrders->where('status', 'APPROVED')->filter(fn($po) => !$po->goodsReceipt)->count();
+            $pendingLpbCount = $purchaseOrders->where('status', 'APPROVED')->filter(fn($po) => $po->vrsSchedule && !$po->goodsReceipt)->count();
             $pendingTtfCount = $goodsReceipts->filter(fn($gr) => !$gr->ttf)->count();
         } else {
             $activeTab = request()->query('tab', 'dashboard');
@@ -226,10 +226,15 @@
                     </div>
 
                     <div class="space-y-1.5">
-                        <span class="px-2.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">AKUN</span>
+                        <span class="px-2.5 text-[9px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest block">AKUN</span>
                         <a href="?tab=profile" class="group flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-bold transition-all duration-150
                             {{ $activeTab === 'profile' ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-l-4 border-emerald-600' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 hover:text-slate-900 dark:hover:text-white border-l-4 border-transparent' }}">
                             <span class="flex items-center gap-2">👤 Profil & Akun</span>
+                        </a>
+                        <a href="https://wa.me/628123456789?text=Halo%20MD%20AmandaMart,%20saya%20dari%20{{ isset($supplier) ? urlencode($supplier->name) : 'Supplier' }}%20ingin%20berkoordinasi." 
+                           target="_blank"
+                           class="group flex items-center justify-between px-2.5 py-2 rounded-lg text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 border-l-4 border-transparent transition-all duration-150">
+                            <span class="flex items-center gap-2">💬 Hubungi MD (WA)</span>
                         </a>
                     </div>
                 @endif
@@ -739,7 +744,7 @@
                         </h2>
                         
                         @php
-                            $approvedPos = $purchaseOrders->where('status', 'APPROVED')->filter(fn($po) => !$po->goodsReceipt);
+                            $approvedPos = $purchaseOrders->where('status', 'APPROVED')->filter(fn($po) => $po->vrsSchedule && !$po->goodsReceipt);
                         @endphp
 
                         @if($approvedPos->isEmpty())
@@ -1126,12 +1131,26 @@
                 @if($activeTab === 'dashboard')
                     <!-- Welcome Banner -->
                     <div class="bg-gradient-to-r from-emerald-50/40 to-white dark:from-slate-900/30 dark:to-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm mb-6 transition-all">
-                        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">
-                            Mitra Supplier: <span class="text-emerald-600 dark:text-emerald-450 font-black">{{ auth()->user()->username }}</span>
-                        </h1>
-                        <p class="text-slate-500 dark:text-slate-400 mt-1.5 text-xs max-w-3xl leading-relaxed">
-                            Kirimkan penawaran harga terbaik untuk pengadaan barang ritel, daftarkan antrean bongkar muat armada logistik (VRS), serta monitor riwayat pembayaran tagihan keuangan (TTF) Anda.
-                        </p>
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                            <div>
+                                <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-950 dark:text-white">
+                                    Mitra Supplier: <span class="text-emerald-600 dark:text-emerald-450 font-black">{{ auth()->user()->username }}</span>
+                                </h1>
+                                <p class="text-slate-500 dark:text-slate-400 mt-1.5 text-xs max-w-3xl leading-relaxed">
+                                    Kirimkan penawaran harga terbaik untuk pengadaan barang ritel, daftarkan antrean bongkar muat armada logistik (VRS), serta monitor riwayat pembayaran tagihan keuangan (TTF) Anda.
+                                </p>
+                            </div>
+                            <div class="flex-shrink-0">
+                                <a href="https://wa.me/628123456789?text=Halo%20MD%20AmandaMart,%20saya%20dari%2520{{ isset($supplier) ? urlencode($supplier->name) : 'Supplier' }}%20ingin%20berkoordinasi." 
+                                   target="_blank" 
+                                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md hover:shadow-emerald-500/10 active:scale-[0.98] transition-all duration-200 w-full sm:w-auto justify-center">
+                                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.665.989 3.3 1.489 4.961 1.49 5.41-.002 9.814-4.388 9.817-9.774.002-2.61-1.012-5.064-2.857-6.912C16.719 2.11 14.267.996 11.666.996c-5.414 0-9.82 4.387-9.823 9.774-.001 1.954.512 3.86 1.488 5.53l-.974 3.56 3.65-.958-.16-.094zm11.233-6.52c-.3-.15-1.771-.875-2.04-.972-.269-.099-.465-.147-.659.15-.195.297-.753.972-.922 1.17-.17.197-.34.221-.639.071-.3-.15-1.266-.467-2.41-1.485-.89-.796-1.49-1.779-1.665-2.079-.175-.3-.019-.461.13-.61.135-.133.3-.349.45-.523.15-.174.2-.297.3-.496.1-.2.05-.374-.025-.524-.075-.15-.659-1.59-.902-2.17-.237-.57-.497-.49-.659-.498-.17-.008-.364-.01-.559-.01-.195 0-.512.074-.78.373-.268.299-1.024 1.02-1.024 2.487 0 1.468 1.07 2.885 1.22 3.085.15.2 2.107 3.218 5.104 4.512.712.308 1.27.491 1.704.629.715.227 1.365.195 1.88.118.574-.085 1.771-.724 2.02-1.424.248-.699.248-1.299.173-1.424-.075-.124-.27-.198-.57-.347z"/>
+                                    </svg>
+                                    Hubungi MD (WA)
+                                </a>
+                            </div>
+                        </div>
                         
                         @if(isset($supplier))
                             <div class="mt-4 p-3 bg-emerald-55/40 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 rounded-xl flex flex-wrap gap-4 items-center text-[11px] font-semibold">
@@ -1351,34 +1370,39 @@
                         @if($wonPos->isEmpty())
                             <p class="text-xs text-slate-450 dark:text-slate-550 italic text-center py-8 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 rounded-xl">Tidak ada Purchase Order disetujui yang membutuhkan reservasi jadwal kirim saat ini.</p>
                         @else
-                            <div class="space-y-3">
-                                @foreach($wonPos as $po)
-                                <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 flex flex-wrap justify-between items-center gap-3">
-                                    <div>
-                                        <span class="px-2 py-0.5 text-[8px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-450 border border-blue-200 dark:border-blue-900/35 rounded-full uppercase">Awaiting Delivery</span>
-                                        <h3 class="font-bold text-xs text-slate-900 dark:text-white mt-1.5">{{ $po->po_number }}</h3>
-                                        <p class="text-[10px] text-rose-600 dark:text-rose-500 font-bold mt-0.5">Batas Waktu: {{ $po->delivery_deadline ? $po->delivery_deadline->format('Y-m-d') : '-' }}</p>
+                            <form action="{{ route('dashboard.vrs.booking') }}" method="POST" class="space-y-5">
+                                @csrf
+                                <div class="space-y-3">
+                                    @foreach($wonPos as $po)
+                                    <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 flex flex-wrap justify-between items-center gap-3">
+                                        <div>
+                                            <span class="px-2 py-0.5 text-[8px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-450 border border-blue-200 dark:border-blue-900/35 rounded-full uppercase">Awaiting Delivery</span>
+                                            <h3 class="font-bold text-xs text-slate-900 dark:text-white mt-1.5">{{ $po->po_number }}</h3>
+                                            <p class="text-[10px] text-rose-600 dark:text-rose-500 font-bold mt-0.5">Batas Waktu: {{ $po->delivery_deadline ? $po->delivery_deadline->format('Y-m-d') : '-' }}</p>
+                                        </div>
+                                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                            <input type="date" name="scheduled_dates[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                            
+                                            <select name="time_slots[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                                <option value="">Pilih Slot Waktu</option>
+                                                <option value="09:00 - 11:00">09:00 - 11:00</option>
+                                                <option value="11:00 - 13:00">11:00 - 13:00</option>
+                                                <option value="13:00 - 15:00">13:00 - 15:00</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <form action="{{ route('dashboard.vrs.booking') }}" method="POST" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                        @csrf
-                                        <input type="hidden" name="purchase_order_id" value="{{ $po->id }}">
-                                        
-                                        <input type="date" name="scheduled_date" required class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                                        
-                                        <select name="time_slot" required class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                                            <option value="">Pilih Slot Waktu</option>
-                                            <option value="09:00 - 11:00">09:00 - 11:00</option>
-                                            <option value="11:00 - 13:00">11:00 - 13:00</option>
-                                            <option value="13:00 - 15:00">13:00 - 15:00</option>
-                                        </select>
-
-                                        <button type="submit" class="bg-emerald-605 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-3 rounded-lg text-[10px] shadow-sm transition duration-150">
-                                            Daftarkan Jadwal
-                                        </button>
-                                    </form>
+                                    @endforeach
                                 </div>
-                                @endforeach
-                            </div>
+
+                                <div class="pt-3 border-t border-slate-105 dark:border-slate-800 flex justify-end">
+                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-xl text-[11px] shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center space-x-1.5">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                        <span>Daftarkan Semua Jadwal VRS</span>
+                                    </button>
+                                </div>
+                            </form>
                         @endif
                     </div>
                 @endif
@@ -1742,21 +1766,6 @@
                             showToast(data.message, 'success');
                             btn.innerHTML = `<span>⚡ PO Berhasil Dibuat</span>`;
                             btn.className = "w-full bg-emerald-600 text-white font-bold py-2.5 px-4 rounded-xl shadow-sm transition-all text-[11px] text-center";
-                            
-                            // Dynamically update UI state of critical items in products table without reload
-                            const criticalRows = document.querySelectorAll('.product-row[data-critical="true"]');
-                            criticalRows.forEach(row => {
-                                row.setAttribute('data-critical', 'false');
-                                const statusCell = row.querySelector('.status-cell');
-                                if (statusCell) {
-                                    statusCell.innerHTML = `<span class="px-2 py-0.5 text-[9px] font-semibold bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 border border-slate-100 dark:border-slate-700 rounded-full uppercase">Aman</span>`;
-                                }
-                                const stockCell = row.querySelector('.font-bold.text-rose-600');
-                                if (stockCell) {
-                                    stockCell.classList.remove('text-rose-600', 'dark:text-rose-500');
-                                    stockCell.classList.add('text-slate-750', 'dark:text-slate-350');
-                                }
-                            });
                         } else {
                             showToast(data.message || 'Terjadi kesalahan.', 'error');
                             btn.disabled = false;

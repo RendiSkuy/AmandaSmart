@@ -35,7 +35,7 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-start py-12 px-6 relative overflow-hidden transition-colors duration-300">
+<body class="bg-slate-50 dark:bg-slate-950 min-h-screen flex flex-col items-center justify-start py-12 px-6 relative transition-colors duration-300">
     
     <!-- Background Decorative Gradients -->
     <div class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-400/20 dark:bg-blue-600/10 blur-3xl -z-10 animate-pulse pointer-events-none"></div>
@@ -134,7 +134,7 @@
 
             <!-- Tab Switching Buttons -->
             <div class="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-5 bg-slate-50 dark:bg-slate-950/40 p-1">
-                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 active-tab" id="tab-btn-qr" onclick="switchTab('qr')">
+                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white" id="tab-btn-qr" onclick="switchTab('qr')">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
@@ -208,7 +208,6 @@
                         inputmode="numeric"
                         pattern="[0-9]{6}"
                         autocomplete="one-time-code"
-                        autofocus
                         required
                     >
                 </div>

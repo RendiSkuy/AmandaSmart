@@ -151,7 +151,7 @@
                         type="text"
                         id="otp"
                         name="otp"
-                        class="w-full py-3.5 text-center text-3xl font-mono font-bold tracking-[0.75em] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-650 focus:border-blue-650 outline-none transition duration-200 text-slate-900 dark:text-white"
+                        class="w-full py-3.5 text-center text-3xl font-mono font-bold tracking-[0.75em] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition duration-200 text-slate-900 dark:text-white"
                         placeholder="000000"
                         maxlength="6"
                         inputmode="numeric"

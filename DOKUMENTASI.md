@@ -1,12 +1,13 @@
-# 📘 DOKUMENTASI STRUKTUR FILE & SISTEM B2B AMANDAMART
+# 📘 DOKUMENTASI STRUKTUR FILE SYSTEM & ARSITEKTUR B2B AMANDAMART
+*(Berkas Pemetaan Komponen Utama Aplikasi untuk Laporan Magang)*
 
-Dokumen ini memuat peta lengkap seluruh berkas (*file system map*) yang menyusun **Sistem Informasi Manajemen Rantai Pasok B2B AmandaMart**, fungsi masing-masing berkas, alur kerja sistem, serta panduan lengkap instalasi dan pengoperasian.
+Dokumen ini memuat peta lengkap seluruh berkas (*file system map*) yang menyusun **Sistem Informasi Manajemen Rantai Pasok B2B AmandaMart**, penjelasan fungsi rinci masing-masing berkas, arsitektur sistem, alur integrasi data, serta panduan instalasi dan pengoperasian.
 
 ---
 
-## 📂 1. Peta Struktur Direktori Project
+## 📂 1. Peta Struktur Direktori Aplikasi
 
-Berikut adalah struktur berkas utama yang membangun aplikasi B2B AmandaMart:
+Berikut adalah peta struktur berkas utama yang membangun aplikasi B2B AmandaMart:
 
 ```
 amandasmart-b2b/
@@ -27,6 +28,7 @@ amandasmart-b2b/
 │   │   │   │   └── VRSController.php
 │   │   │   └── WebDashboardController.php
 │   │   └── Middleware/
+│   │       ├── TwoFactorSession.php
 │   │       └── RoleMiddleware.php
 │   └── Models/
 │       ├── User.php
@@ -51,6 +53,7 @@ amandasmart-b2b/
 │   │   ├── 2026_05_25_000000_create_offers_table.php
 │   │   └── 2026_05_28_000000_create_generate_auto_po_proc.php
 │   └── seeders/
+│       ├── DatabaseSeeder.php
 │       ├── SupplierSeeder.php
 │       ├── ProductPoSeeder.php
 │       ├── PurchaseOrderSeeder.php
@@ -68,20 +71,23 @@ amandasmart-b2b/
 │       ├── dashboard.blade.php
 │       ├── lpb-detail.blade.php
 │       └── ttf-detail.blade.php
-└── routes/
-    ├── api.php
-    └── web.php
+├── routes/
+│   ├── api.php
+│   └── web.php
+└── tests/
+    └── Feature/
+        └── ExampleTest.php
 ```
 
 ---
 
-## 📄 2. Penjelasan Detail Fungsi Berkas
+## 📄 2. Penjelasan Detail Komponen & Fungsi Berkas
 
 ### 🗃️ A. Model Eloquent (Direktori `app/Models/`)
-Model digunakan untuk merepresentasikan dan berinteraksi dengan tabel-tabel di database:
+Model digunakan untuk merepresentasikan dan berinteraksi dengan tabel-tabel di database menggunakan ORM (Object-Relational Mapping):
 
-1. **`User.php`**: Menyimpan data pengguna portal. Mengatur relasi `belongsTo` ke `Supplier` (jika user tersebut merupakan akun sales supplier), serta menyediakan atribut otentikasi.
-2. **`Supplier.php`**: Menyimpan profil perusahaan rekanan (Nama PT, Kode Vendor, nomor WA). Berelasi `hasMany` dengan `User` (untuk akun sales) dan `PurchaseOrder`.
+1. **`User.php`**: Menyimpan kredensial pengguna, peran akses (`role` = `md` atau `supplier`), dan secret key 2FA Google Authenticator. Mengatur relasi ke `Supplier`.
+2. **`Supplier.php`**: Menyimpan profil resmi mitra vendor (Nama PT, Kode Vendor, nomor WA). Berelasi `hasMany` dengan `User` (untuk akun sales) dan `PurchaseOrder`.
 3. **`Product.php`**: Menyimpan master data produk ritel (PLU Code, Nama, Kuantitas `on_hand`, Safety stock `minor`, dan kapasitas gudang `max_stock`).
 4. **`PurchaseOrder.php`**: Menyimpan transaksi Purchase Order (PO). Mengatur data produk yang dibeli, kuantitas order, status PO, tenggat pengiriman, dan vendor terpilih.
 5. **`Offer.php`**: Menyimpan data penawaran harga modal per PCS yang diajukan oleh akun sales supplier terhadap draf PO yang berstatus `PENDING_BIDDING`.
@@ -96,10 +102,11 @@ Model digunakan untuk merepresentasikan dan berinteraksi dengan tabel-tabel di d
 
 #### 💻 Web Controller (Dashboard & AJAX Handlers)
 * **`WebDashboardController.php`**:
-  * **`index`**: Mengumpulkan data produk, PO, VRS, LPB, TTF, dan menghitung laporan kepatuhan *Service Level* (hanya untuk MD) untuk dirender pada file `dashboard.blade.php`.
+  * **`index`**: Mengumpulkan data produk, PO, VRS, LPB, TTF, dan menghitung laporan kepatuhan *Service Level* kualitatif untuk dirender pada file `dashboard.blade.php`.
   * **`generateAutoPO`**: Menjalankan stored procedure restock stok kritis via DB.
   * **`submitOffer`**: Memproses penawaran harga modal bulk dari portal supplier.
   * **`approveOffer`**: Menyetujui pemenang bidding lelang secara dinamis tanpa reload halaman.
+  * **`createVrsBooking`**: Memproses pendaftaran antrean truk secara bulk untuk portal supplier.
   * **`storeLpb` & `generateTtf`**: Membuka blok transaksi database untuk menyimpan LPB, retur, serta menerbitkan faktur tagihan TTF.
   * **`showLpb` & `showTtf`**: Menyediakan tampilan ramah-cetak (print-friendly view).
   * **`updateProfile`**: Memproses perubahan nomor WA dan password supplier.
@@ -117,6 +124,7 @@ Model digunakan untuk merepresentasikan dan berinteraksi dengan tabel-tabel di d
 
 ### 🛡️ C. Keamanan & Peran (Middleware)
 * **`Http/Middleware/RoleMiddleware.php`**: Menyaring akses rute. Memastikan pengguna dengan peran `md` tidak dapat masuk ke panel supplier, begitu pula sebaliknya demi integritas sistem.
+* **`Http/Middleware/TwoFactorSession.php`**: Memvalidasi sesi 2FA sementara untuk proses pendaftaran setup Google Authenticator.
 
 ---
 
@@ -126,7 +134,7 @@ Model digunakan untuk merepresentasikan dan berinteraksi dengan tabel-tabel di d
 * **`2026_04_13_172211_create_products_table.php`**: Skema tabel inventori produk DC.
 * **`2026_04_13_172211_create_purchase_orders_table.php`**: Skema tabel transaksi PO.
 * **`2026_05_25_000000_create_offers_table.php`**: Skema tabel pengumpulan lelang harga penawaran supplier.
-* **`2026_05_28_000000_create_generate_auto_po_proc.php`**: Migrasi khusus yang mengompilasi **Stored Procedure** database (`generate_auto_po_proc`) untuk mendeteksi otomatis stok kritis di bawah minor dan melakukan generate draf PO.
+* **`2026_05_28_000000_create_generate_auto_po_proc.php`**: Migrasi khusus yang mengompilasi **Stored Procedure** database (`generate_auto_po_proc`) untuk mendeteksi otomatis stok kritis di bawah kapasitas maksimum dan melakukan generate draf PO.
 
 ---
 

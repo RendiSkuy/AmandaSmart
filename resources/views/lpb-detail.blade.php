@@ -99,7 +99,7 @@
                 <div>
                     <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">AMANDA<span class="text-blue-600 dark:text-blue-500 font-semibold">mart</span></h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold">Distribution Center (DC) Utama</p>
-                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Jl. Raya Supply Chain No. 8, Jakarta</p>
+                    <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Jl. Mengger Hilir No.123, Sukapura, Kec. Dayeuhkolot, Kabupaten Bandung, Jawa Barat 40267</p>
                 </div>
                 <div class="sm:text-right">
                     <h2 class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Laporan Penerimaan Barang</h2>
@@ -175,7 +175,7 @@
             <div>
                 <p class="text-slate-400 dark:text-slate-500 font-semibold">Armada Truk Driver / Supplier</p>
                 <div class="h-16"></div>
-                <p class="font-extrabold text-slate-800 dark:text-slate-200 underline decoration-slate-350">...................................</p>
+                <p class="font-extrabold text-slate-800 dark:text-slate-200 underline decoration-slate-300">...................................</p>
                 <p class="text-[9px] text-slate-400 dark:text-slate-500 mt-1 font-semibold uppercase tracking-wider">Representatif Vendor</p>
             </div>
         </div>

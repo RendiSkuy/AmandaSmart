@@ -60,9 +60,10 @@
             <span class="px-4 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-full uppercase tracking-widest shadow-sm">
                 Portal Integrasi Rantai Pasok B2B
             </span>
-            <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-5">
-                AMANDA<span class="text-blue-600 dark:text-blue-500">mart</span> B2B Portal
-            </h1>
+            <div class="flex flex-col items-center justify-center mt-5">
+                <img src="{{ asset('logo-amandamart.png') }}" alt="AmandaMart Logo" class="h-16 w-auto">
+                <h1 class="text-2xl font-black text-slate-700 dark:text-slate-300 tracking-wider uppercase mt-3">B2B Portal</h1>
+            </div>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-lg mx-auto leading-relaxed">
                 Platform kolaborasi rantai pasok antara PT Amanda Smart Retail Tbk dengan para Supplier & Vendor rekanan untuk manajemen logistik dan pengadaan yang efisien.
             </p>

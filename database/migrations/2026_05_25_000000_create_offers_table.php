@@ -16,8 +16,12 @@ return new class extends Migration
             $table->foreignId('purchase_order_id')->constrained('purchase_orders')->onDelete('cascade');
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
             $table->decimal('price_per_pcs', 15, 2);
             $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+            
+            $table->unique(['purchase_order_id', 'product_id', 'user_id']);
+            
             $table->timestamps();
         });
     }

@@ -76,14 +76,19 @@ class SimulasiRetailCommand extends Command
 
         $po = PurchaseOrder::create([
             'po_number' => $poNumber,
-            'product_id' => $product->id,
-            'qty_po' => $qtyToOrder,
             'status' => 'PENDING_BIDDING',
             'selected_supplier_id' => null
         ]);
 
+        $poDetail = \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
+            'product_id' => $product->id,
+            'qty_po' => $qtyToOrder,
+            'price_per_pcs' => 0
+        ]);
+
         $this->line("   [OK] Sistem berhasil membuat draf otomatis: {$po->po_number}");
-        $this->line("        Kuantitas yang diminta sistem (Read-Only): {$po->qty_po} PCS");
+        $this->line("        Kuantitas yang diminta sistem (Read-Only): {$poDetail->qty_po} PCS");
 
         // ----------------------------------------------------
         // TAHAP 3: SIMULASI SUPPLIER MENGISI HARGA (BIDDING)
@@ -93,6 +98,8 @@ class SimulasiRetailCommand extends Command
         $offerA = Offer::create([
             'purchase_order_id' => $po->id,
             'supplier_id' => $supplierA->id,
+            'user_id' => $userSupplier1->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 60000,
             'status' => 'pending'
         ]);
@@ -100,6 +107,8 @@ class SimulasiRetailCommand extends Command
         $offerB = Offer::create([
             'purchase_order_id' => $po->id,
             'supplier_id' => $supplierB->id,
+            'user_id' => $userSupplier2->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 58000,
             'status' => 'pending'
         ]);
@@ -121,6 +130,8 @@ class SimulasiRetailCommand extends Command
         $offerB->update(['status' => 'accepted']);
         $offerA->update(['status' => 'rejected']);
 
+        $poDetail->update(['price_per_pcs' => $offerB->price_per_pcs]);
+
         $this->line("   [OK] Status {$po->po_number} berubah menjadi 'APPROVED'.");
         $this->line("   [OK] Supplier B terpilih sebagai vendor resmi. Sistem memicu WhatsApp Notifikasi.");
 
@@ -139,9 +150,14 @@ class SimulasiRetailCommand extends Command
 
         $lpb = GoodsReceipt::create([
             'purchase_order_id' => $po->id,
-            'qty_received' => 1180,
             'received_at' => now(),
             'barcode' => strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $product->name)),
+        ]);
+
+        $lpbDetail = \App\Models\GoodsReceiptDetail::create([
+            'goods_receipt_id' => $lpb->id,
+            'product_id' => $product->id,
+            'qty_received' => 1180
         ]);
 
         $retur = Retur::create([
@@ -159,11 +175,11 @@ class SimulasiRetailCommand extends Command
         // ----------------------------------------------------
         $this->info("\n👉 TAHAP 6: Mengkalkulasi laporan performa & nominal tagihan otomatis...");
 
-        $qtyCleanReceived = $lpb->qty_received - $retur->qty_retur; 
-        $serviceLevelScore = ($qtyCleanReceived / $po->qty_po) * 100; 
+        $qtyCleanReceived = $lpbDetail->qty_received - $retur->qty_retur; 
+        $serviceLevelScore = ($qtyCleanReceived / $poDetail->qty_po) * 100; 
 
         $pricePerPcs = $offerB->price_per_pcs;
-        $totalAmountBeforeDeduction = $lpb->qty_received * $pricePerPcs;
+        $totalAmountBeforeDeduction = $lpbDetail->qty_received * $pricePerPcs;
         $totalDeductions = $retur->qty_retur * $pricePerPcs; 
         $finalPayment = $totalAmountBeforeDeduction - $totalDeductions;
 
@@ -180,8 +196,8 @@ class SimulasiRetailCommand extends Command
             [
                 ['Nomor Purchase Order (PO)', $po->po_number],
                 ['Vendor Terpilih', $supplierB->name],
-                ['Kuantitas Diminta Sistem (PO)', $po->qty_po . ' PCS'],
-                ['Kuantitas Tiba di Gudang (LPB)', $lpb->qty_received . ' PCS'],
+                ['Kuantitas Diminta Sistem (PO)', $poDetail->qty_po . ' PCS'],
+                ['Kuantitas Tiba di Gudang (LPB)', $lpbDetail->qty_received . ' PCS'],
                 ['Kuantitas Barang Cacat (Retur)', $retur->qty_retur . ' PCS'],
                 ['Kuantitas Bersih Diterima Gudang', $qtyCleanReceived . ' PCS'],
                 ['SKOR SERVICE LEVEL SUPPLIER', number_format($serviceLevelScore, 1) . ' %'],

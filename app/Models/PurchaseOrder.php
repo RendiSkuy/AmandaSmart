@@ -14,8 +14,6 @@ class PurchaseOrder extends Model
 
     protected $fillable = [
         'po_number',
-        'product_id',
-        'qty_po',
         'status',
         'selected_supplier_id',
         'delivery_deadline',
@@ -26,19 +24,19 @@ class PurchaseOrder extends Model
     ];
 
     /**
+     * RELASI: PO ini memiliki banyak item detail (PurchaseOrderDetail)
+     */
+    public function details(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderDetail::class, 'purchase_order_id');
+    }
+
+    /**
      * RELASI: PO ini milik satu Supplier yang terpilih
      */
     public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'selected_supplier_id');
-    }
-
-    /**
-     * RELASI: PO ini memesan satu Product
-     */
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class, 'product_id');
     }
 
     /**

@@ -97,7 +97,7 @@
         <div class="border-b border-slate-200 dark:border-slate-800 pb-6 mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">AMANDA<span class="text-blue-600 dark:text-blue-500 font-semibold">mart</span></h1>
+                    <img src="{{ asset('logo-amandamart.png') }}" alt="AmandaMart Logo" class="h-8 w-auto">
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold">Distribution Center (DC) Utama</p>
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Jl. Mengger Hilir No.123, Sukapura, Kec. Dayeuhkolot, Kabupaten Bandung, Jawa Barat 40267</p>
                 </div>
@@ -150,16 +150,25 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-850">
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/20 transition">
-                        <td class="py-3.5 px-4 font-mono font-bold text-slate-605 dark:text-slate-400">{{ $lpb->purchaseOrder->product->plu_code }}</td>
-                        <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200 text-sm">{{ $lpb->purchaseOrder->product->name }}</td>
-                        <td class="py-3.5 px-4 text-center font-bold text-slate-600 dark:text-slate-400">{{ $lpb->purchaseOrder->qty_po }} PCS</td>
-                        <td class="py-3.5 px-4 text-center font-black text-slate-900 dark:text-white text-sm">{{ $lpb->qty_received }} PCS</td>
-                        <td class="py-3.5 px-4 text-center font-bold {{ ($lpb->retur?->qty_retur ?? 0) > 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-600 dark:text-slate-400' }}">
-                            {{ $lpb->retur?->qty_retur ?? 0 }} PCS
-                        </td>
-                        <td class="py-3.5 px-4 text-slate-550 dark:text-slate-400 font-medium italic">{{ $lpb->retur?->reason ?? '-' }}</td>
-                    </tr>
+                    @foreach($lpb->details as $detail)
+                        @php
+                            $poDetail = $lpb->purchaseOrder->details->where('product_id', $detail->product_id)->first();
+                            $qtyPo = $poDetail ? $poDetail->qty_po : 0;
+                            $returItem = $lpb->returs->where('product_id', $detail->product_id)->first();
+                            $qtyRetur = $returItem ? $returItem->qty_retur : 0;
+                            $reason = $returItem ? $returItem->reason : '-';
+                        @endphp
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/20 transition">
+                            <td class="py-3.5 px-4 font-mono font-bold text-slate-605 dark:text-slate-400">{{ $detail->product->plu_code }}</td>
+                            <td class="py-3.5 px-4 font-bold text-slate-800 dark:text-slate-200 text-sm">{{ $detail->product->name }}</td>
+                            <td class="py-3.5 px-4 text-center font-bold text-slate-600 dark:text-slate-400">{{ $qtyPo }} PCS</td>
+                            <td class="py-3.5 px-4 text-center font-black text-slate-900 dark:text-white text-sm">{{ $detail->qty_received }} PCS</td>
+                            <td class="py-3.5 px-4 text-center font-bold {{ $qtyRetur > 0 ? 'text-rose-600 dark:text-rose-500' : 'text-slate-600 dark:text-slate-400' }}">
+                                {{ $qtyRetur }} PCS
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-550 dark:text-slate-400 font-medium italic">{{ $reason }}</td>
+                        </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>

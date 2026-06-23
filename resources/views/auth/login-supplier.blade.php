@@ -63,9 +63,9 @@
                 </svg>
                 Kembali ke Beranda
             </a>
-            <h2 class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-500 tracking-tight">
-                AMANDA<span class="text-slate-800 dark:text-white">mart</span>
-            </h2>
+            <div class="flex justify-center mb-2">
+                <img src="{{ asset('logo-amandamart.png') }}" alt="AmandaMart Logo" class="h-10 w-auto">
+            </div>
             <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 font-semibold uppercase tracking-wider">
                 Portal Pemasok & Vendor B2B
             </p>

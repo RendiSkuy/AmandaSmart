@@ -443,175 +443,10 @@
 
                 <!-- Tab 2: Bidding Approval -->
                 @if($activeTab === 'bidding')
-                    <!-- Alert Petunjuk Tahap -->
-                    <div class="mb-4 p-3.5 bg-blue-50 dark:bg-blue-950/20 border-l-4 border-blue-600 rounded-r-xl text-slate-700 dark:text-slate-400 shadow-sm flex items-start space-x-2.5 no-print">
-                        <svg width="16" height="16" class="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div class="text-[11px]">
-                            <span class="font-bold text-xs text-blue-900 dark:text-blue-400 block">💡 Petunjuk Tahap 2 & 3: Proses Bidding & Pemilihan Pemenang</span>
-                            <p class="mt-0.5 leading-relaxed">MD meninjau serta membandingkan penawaran harga modal masuk dari berbagai akun sales supplier rekanan. Tekan tombol 'Setujui' pada baris sales terpilih untuk menyetujui pemenang PO secara dinamis menggunakan teknologi AJAX tanpa reload halaman.</p>
-                        </div>
-                    </div>
-
-                    <!-- Stage 2 & 3 Body -->
-                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm mb-6">
-                        <h2 class="text-sm font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="h-6 w-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-450 rounded-lg flex items-center justify-center text-xs">🤝</span>
-                            Stage 2 & 3: Proses Bidding & Pemilihan Pemenang (MD Approval)
-                        </h2>
-                        
-                        @php
-                            $pendingPos = $purchaseOrders->where('status', 'PENDING_BIDDING');
-                            $pendingPoIds = $pendingPos->pluck('id');
-                        @endphp
-
-                        @if($pendingPos->isEmpty())
-                            <p class="text-[11px] text-slate-500 dark:text-slate-400 italic text-center py-8 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 rounded-xl">Tidak ada draf Purchase Order (PO) berstatus PENDING_BIDDING saat ini.</p>
-                        @else
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <!-- Kolom Kiri: Daftar PT & Sales -->
-                                <div class="lg:col-span-1 space-y-3">
-                                    <h4 class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest font-mono">Pilih Supplier & Akun Sales:</h4>
-                                    
-                                    <div class="space-y-2">
-                                        @foreach($suppliers as $sup)
-                                        @php
-                                            $poOffersForSup = $offers->where('supplier_id', $sup->id)->filter(fn($o) => $pendingPoIds->contains($o->purchase_order_id));
-                                            $salesWithOffers = $poOffersForSup->pluck('user')->unique('id')->filter();
-                                        @endphp
-                                        <div class="border border-slate-200 dark:border-slate-850 rounded-xl overflow-hidden bg-white dark:bg-slate-900 shadow-sm">
-                                            <!-- Header PT (Clickable) -->
-                                            <button type="button" 
-                                                    onclick="toggleSupplier('sup-{{ $sup->id }}')"
-                                                    class="w-full text-left px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950/40 hover:bg-slate-100 dark:hover:bg-slate-955 transition flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
-                                                <div class="flex items-center space-x-2">
-                                                    <div class="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                                                    <span class="text-xs font-bold text-slate-805 dark:text-slate-200">{{ $sup->name }}</span>
-                                                </div>
-                                                <span class="text-[8px] bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-400 px-1.5 py-0.5 rounded font-bold uppercase">
-                                                    {{ $salesWithOffers->count() }} Sales
-                                                </span>
-                                            </button>
-
-                                            <!-- List Sales (Collapsible) -->
-                                            <div id="sup-{{ $sup->id }}" class="hidden p-1.5 space-y-1 bg-white dark:bg-slate-900 border-t border-slate-50 dark:border-slate-850">
-                                                @if($salesWithOffers->isEmpty())
-                                                    <p class="text-[9px] text-slate-400 italic p-2 text-center">Belum ada penawaran bidding.</p>
-                                                @else
-                                                    @foreach($salesWithOffers as $salesUser)
-                                                    @php
-                                                        $salesOfferCount = $poOffersForSup->where('user_id', $salesUser->id)->count();
-                                                    @endphp
-                                                    <button type="button"
-                                                            onclick="selectSalesOffer('{{ $salesUser->id }}')"
-                                                            class="w-full text-left px-2.5 py-1.5 text-[11px] rounded-lg transition hover:bg-blue-50 dark:hover:bg-blue-955/20 text-slate-650 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-400 font-semibold flex justify-between items-center sales-btn"
-                                                            id="btn-sales-{{ $salesUser->id }}">
-                                                        <span>👤 {{ $salesUser->username }}</span>
-                                                        <span class="text-[9px] bg-slate-105 dark:bg-slate-800 text-slate-500 dark:text-slate-450 px-1 py-0.5 rounded font-mono">{{ $salesOfferCount }} Barang</span>
-                                                    </button>
-                                                    @endforeach
-                                                @endif
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-
-                                <!-- Kolom Kanan: Detail Penawaran Sales -->
-                                <div class="lg:col-span-2">
-                                    <h4 class="text-[10px] font-bold text-slate-400 dark:text-slate-550 uppercase tracking-widest mb-3 font-mono">Detail Penawaran:</h4>
-                                    
-                                    <!-- Placeholder -->
-                                    <div class="bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-850 border-dashed rounded-2xl p-6 min-h-[220px] flex flex-col justify-center items-center text-center shadow-inner"
-                                         id="offer-detail-placeholder">
-                                        <div class="text-slate-350 dark:text-slate-700 text-4xl mb-2">🤝</div>
-                                        <p class="text-[11px] text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">Pilih salah satu Nama Perusahaan di sebelah kiri, lalu pilih akun sales rekanan untuk melihat rincian penawaran harga modal barang.</p>
-                                    </div>
-
-                                    <!-- Render penawaran tersembunyi per Sales User -->
-                                    @foreach($suppliers as $sup)
-                                    @php
-                                        $poOffersForSup = $offers->where('supplier_id', $sup->id)->filter(fn($o) => $pendingPoIds->contains($o->purchase_order_id));
-                                        $salesWithOffers = $poOffersForSup->pluck('user')->unique('id')->filter();
-                                    @endphp
-                                        @foreach($salesWithOffers as $salesUser)
-                                        @php
-                                            $salesOffers = $poOffersForSup->where('user_id', $salesUser->id);
-                                        @endphp
-                                        <div class="bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-900/60 rounded-2xl p-4 shadow-sm hidden space-y-4"
-                                             id="offer-detail-sales-{{ $salesUser->id }}">
-                                            
-                                            <!-- Header Informasi Sales -->
-                                            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
-                                                <div>
-                                                    <h5 class="text-[8px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Perusahaan Rekanan</h5>
-                                                    <p class="text-xs font-extrabold text-slate-850 dark:text-slate-200">{{ $sup->name }}</p>
-                                                </div>
-                                                <div class="text-right">
-                                                    <span class="text-[10px] font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-1 rounded-lg border border-blue-100/50 dark:border-blue-900/30">Akun Sales: {{ $salesUser->username }}</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- List Semua Barang yang Ditawar -->
-                                            <div class="space-y-3">
-                                                <h4 class="text-[10px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-widest font-mono">Daftar Penawaran Harga Modal:</h4>
-                                                
-                                                @foreach($salesOffers as $off)
-                                                @php
-                                                    $poItem = $pendingPos->where('id', $off->purchase_order_id)->first();
-                                                @endphp
-                                                @if($poItem)
-                                                <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950/20 hover:bg-white dark:hover:bg-slate-900 hover:shadow-sm transition-all duration-150 space-y-3 po-card" id="po-card-{{ $poItem->id }}">
-                                                    <div class="flex justify-between items-start flex-wrap gap-2">
-                                                        <div>
-                                                            <span class="px-1.5 py-0.5 text-[8px] font-bold bg-amber-100 dark:bg-amber-955 text-amber-800 dark:text-amber-400 border border-amber-200 rounded">PO: {{ $poItem->po_number }}</span>
-                                                            <h5 class="text-xs font-bold text-slate-900 dark:text-white mt-1.5">{{ $poItem->product->name }}</h5>
-                                                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Kuantitas PO Ritel: <strong>{{ $poItem->qty_po }} PCS</strong></p>
-                                                        </div>
-                                                        <div class="text-right">
-                                                            <span class="text-[9px] text-slate-400 dark:text-slate-500 font-bold block uppercase tracking-wider">Harga Modal</span>
-                                                            <span class="text-sm font-black text-blue-600 dark:text-blue-450 mt-0.5 block">Rp {{ number_format($off->price_per_pcs, 0, ',', '.') }} <span class="text-[10px] font-normal text-slate-450">/ PCS</span></span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="flex flex-wrap justify-between items-center gap-2.5 pt-2.5 border-t border-slate-200/50 dark:border-slate-805">
-                                                        <div>
-                                                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium font-mono">Total Harga Kotor: <strong class="text-slate-800 dark:text-slate-200">Rp {{ number_format($off->price_per_pcs * $poItem->qty_po, 0, ',', '.') }}</strong></span>
-                                                        </div>
-                                                        
-                                                        <!-- Form Approve -->
-                                                        <form action="{{ route('dashboard.offers.approve') }}" method="POST" class="ajax-approve-form flex flex-wrap items-center gap-1.5" data-po-id="{{ $poItem->id }}" data-sales-id="{{ $salesUser->id }}">
-                                                            @csrf
-                                                            <input type="hidden" name="purchase_order_id" value="{{ $poItem->id }}">
-                                                            <input type="hidden" name="offer_id" value="{{ $off->id }}">
-                                                            
-                                                            <div class="flex items-center space-x-1">
-                                                                <label class="text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase whitespace-nowrap">Deadline:</label>
-                                                                <input type="date" name="delivery_deadline" required 
-                                                                       class="text-[11px] border border-slate-350 dark:border-slate-800 rounded-md px-2 py-0.5 focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white dark:bg-slate-950 text-slate-850 dark:text-white font-semibold">
-                                                            </div>
-
-                                                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 px-2.5 rounded-md text-[10px] shadow-sm transition duration-150 flex items-center space-x-1">
-                                                                <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                                <span>Setujui</span>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                                @endif
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    </div>
+                    @include('partials.bidding-md')
                 @endif
+
+
 
                 <!-- Tab 3: VRS monitor -->
                 @if($activeTab === 'vrs')
@@ -697,21 +532,21 @@
                                                         $salesUsername = $acceptedOffer && $acceptedOffer->user ? $acceptedOffer->user->username : '-';
                                                     @endphp
                                                     <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/30 transition">
-                                                        <td class="py-2 px-3 font-mono font-bold text-blue-650 dark:text-blue-400">PO: {{ $sched->purchaseOrder->po_number }}</td>
-                                                        <td class="py-2 px-3 font-semibold text-slate-700 dark:text-slate-350">👤 Sales: {{ $salesUsername }}</td>
-                                                        <td class="py-2 px-3 font-medium">{{ $sched->scheduled_date }}</td>
-                                                        <td class="py-2 px-3 font-bold text-slate-800 dark:text-slate-200">Jadwal Truk: {{ $sched->time_slot }}</td>
-                                                        <td class="py-2 px-3 font-mono font-medium">
-                                                            {{ $sched->actual_arrival_at ? $sched->actual_arrival_at->format('Y-m-d H:i:s') : '-' }}
-                                                        </td>
-                                                        <td class="py-2 px-3">
-                                                            @if($sched->status === 'completed')
-                                                                <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 rounded-full uppercase">Selesai Bongkar</span>
-                                                            @else
-                                                                <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/45 rounded-full uppercase">Menunggu Kedatangan</span>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
+                                                         <td class="py-3 px-3 font-mono font-bold text-blue-650 dark:text-blue-400">PO: {{ $sched->purchaseOrder->po_number }}</td>
+                                                         <td class="py-3 px-3 font-semibold text-slate-700 dark:text-slate-350">👤 Sales: {{ $salesUsername }}</td>
+                                                         <td class="py-3 px-3 font-medium">{{ $sched->scheduled_date }}</td>
+                                                         <td class="py-3 px-3 font-bold text-slate-800 dark:text-slate-200">Jadwal Truk: {{ $sched->time_slot }}</td>
+                                                         <td class="py-3 px-3 font-mono font-medium">
+                                                             {{ $sched->actual_arrival_at ? $sched->actual_arrival_at->format('Y-m-d H:i:s') : '-' }}
+                                                         </td>
+                                                         <td class="py-3 px-3">
+                                                             @if($sched->status === 'completed')
+                                                                 <span class="px-2 py-0.5 text-[9px] font-bold bg-emerald-50 dark:bg-emerald-955 text-emerald-800 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/40 rounded-full uppercase">Selesai Bongkar</span>
+                                                             @else
+                                                                 <span class="px-2 py-0.5 text-[9px] font-bold bg-amber-50 dark:bg-amber-955 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-905 rounded-full uppercase">Menunggu Kedatangan</span>
+                                                             @endif
+                                                         </td>
+                                                     </tr>
                                                     @endforeach
                                                 </tbody>
                                             </table>
@@ -788,7 +623,7 @@
                                         <!-- Accordion Content -->
                                         <div id="lpb-sup-{{ $supplierId }}" class="p-3 space-y-3">
                                             @foreach($pos as $po)
-                                            <div class="p-3 border border-slate-200 dark:border-slate-850 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 lpb-card" id="lpb-card-{{ $po->id }}">
+                                            <div class="p-3 border border-slate-200 dark:border-slate-850 rounded-xl bg-slate-50/50 dark:bg-slate-955/20 lpb-card" id="lpb-card-{{ $po->id }}">
                                                 <div class="mb-3">
                                                     <div class="flex justify-between items-start flex-wrap gap-2">
                                                         <div>
@@ -802,44 +637,64 @@
                                                                 Kode Supplier: <strong class="text-slate-800 dark:text-slate-200 font-mono font-semibold">{{ $supplierCode }}</strong> |
                                                                 Akun Supplier: <strong class="text-blue-700 dark:text-blue-400 font-bold">Akun Supplier: {{ $salesUsername }}</strong>
                                                             </p>
-                                                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Produk: <span class="font-semibold text-slate-700 dark:text-slate-350">{{ $po->product->name }}</span> | Diminta Ritel: <strong>{{ $po->qty_po }} PCS</strong></p>
+                                                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Dokumen PO Multi-Item | Total Barang: <strong>{{ $po->details->count() }} Jenis</strong></p>
                                                         </div>
                                                         <span class="px-2 py-0.5 text-[8px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/35 rounded uppercase">PO Siap Bongkar</span>
                                                     </div>
                                                 </div>
-                                                <form action="{{ route('dashboard.lpb.store') }}" method="POST" class="ajax-lpb-form space-y-3 bg-white dark:bg-slate-900 p-3 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm" data-po-id="{{ $po->id }}" data-supplier-id="{{ $supplierId }}">
+                                                <form action="{{ route('dashboard.lpb.store') }}" method="POST" class="ajax-lpb-form space-y-4 bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm" data-po-id="{{ $po->id }}" data-supplier-id="{{ $supplierId }}">
                                                     @csrf
                                                     <input type="hidden" name="purchase_order_id" value="{{ $po->id }}">
                                                     
-                                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                                                         <div>
                                                             <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide mb-1">Barcode Barang (Otomatis)</label>
-                                                            <input type="text" name="barcode" readonly value="{{ strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $po->product->name)) }}" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg py-1.5 px-2.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 tracking-widest outline-none">
+                                                            <input type="text" name="barcode" readonly value="{{ strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $po->details->first()->product->name ?? 'BARCODE')) }}" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg py-1.5 px-2.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 tracking-widest outline-none">
                                                         </div>
                                                         <div>
                                                             <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide mb-1">Waktu Tiba (Diisi Admin)</label>
                                                             <input type="datetime-local" name="received_at" required value="{{ now()->format('Y-m-d\TH:i') }}" class="w-full border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg py-1 px-2 text-[10px] text-slate-700 dark:text-slate-300 font-bold focus:ring-1 focus:ring-blue-500 focus:outline-none">
                                                         </div>
-                                                        <div>
-                                                            <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide mb-1">Jumlah Fisik Tiba (LPB)</label>
-                                                            <input type="number" name="qty_received" required min="0" placeholder="Contoh: 1000" class="w-full border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg py-1 px-2 text-[10px] font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                                                        </div>
                                                     </div>
-                                                    
-                                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-                                                        <div>
-                                                            <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide mb-1">Jumlah Rusak (Retur)</label>
-                                                            <input type="number" name="qty_retur" min="0" placeholder="Kosongkan jika nihil" class="w-full border border-slate-350 dark:border-slate-850 bg-white dark:bg-slate-955 rounded-lg py-1 px-2 text-[10px] font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                                                        </div>
-                                                        <div class="sm:col-span-2">
-                                                            <label class="block text-[9px] font-bold text-slate-500 dark:text-slate-450 uppercase tracking-wide mb-1">Alasan Retur (Wajib jika ada rusak)</label>
-                                                            <div class="flex space-x-2">
-                                                                <input type="text" name="reason" placeholder="Contoh: Dus pembungkus pecah / sobek" class="flex-grow border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg py-1 px-2.5 text-[10px] text-slate-850 dark:text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none">
-                                                                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3.5 rounded-lg text-[10px] shadow-sm transition duration-150 flex-shrink-0">
-                                                                    Simpan LPB
-                                                                </button>
+
+                                                    <!-- List item produk PO untuk input LPB & Retur -->
+                                                    <div class="space-y-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                                                        <h4 class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider font-mono">Daftar Kuantitas Penerimaan Barang (LPB) & Retur:</h4>
+                                                        @foreach($po->details as $detail)
+                                                        <div class="p-3 border border-slate-100 dark:border-slate-800/80 rounded-lg bg-slate-50/30 dark:bg-slate-955/10 space-y-2.5">
+                                                            <div class="flex justify-between items-center">
+                                                                <div>
+                                                                    <span class="text-[11px] font-bold text-slate-800 dark:text-slate-200">{{ $detail->product->name }}</span>
+                                                                    <span class="text-[9px] text-slate-400 font-mono block">{{ $detail->product->plu_code }}</span>
+                                                                </div>
+                                                                <span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 px-2 py-0.5 rounded font-mono font-bold">
+                                                                    Permintaan PO: {{ $detail->qty_po }} PCS
+                                                                </span>
+                                                            </div>
+                                                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                                                <div>
+                                                                    <label class="block text-[8px] font-bold text-slate-555 dark:text-slate-455 uppercase mb-1">Fisik Diterima</label>
+                                                                    <input type="number" name="qty_received[{{ $detail->product_id }}]" required min="0" max="{{ $detail->qty_po }}" value="{{ $detail->qty_po }}" 
+                                                                           oninput="const r = parseInt(this.value) || 0; const ret = document.getElementById('qty_retur_{{ $po->id }}_{{ $detail->product_id }}'); if (ret) { ret.value = Math.max(0, {{ $detail->qty_po }} - r); }"
+                                                                           class="w-full border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg py-1 px-2 text-[10px] font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                                                </div>
+                                                                <div>
+                                                                    <label class="block text-[8px] font-bold text-slate-555 dark:text-slate-455 uppercase mb-1">Kuantitas Retur</label>
+                                                                    <input type="number" name="qty_retur[{{ $detail->product_id }}]" id="qty_retur_{{ $po->id }}_{{ $detail->product_id }}" readonly value="0" placeholder="0" class="w-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955/60 rounded-lg py-1 px-2 text-[10px] font-bold text-slate-500 dark:text-slate-400 outline-none">
+                                                                </div>
+                                                                <div>
+                                                                    <label class="block text-[8px] font-bold text-slate-555 dark:text-slate-455 uppercase mb-1">Alasan Retur</label>
+                                                                    <input type="text" name="reason[{{ $detail->product_id }}]" placeholder="Dus penyok/sobek" class="w-full border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg py-1 px-2 text-[10px] text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                        @endforeach
+                                                    </div>
+
+                                                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                                                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-lg text-[10px] shadow-sm transition duration-150">
+                                                            Simpan LPB & Retur
+                                                        </button>
                                                     </div>
                                                 </form>
                                             </div>
@@ -874,7 +729,7 @@
                         
                         @php
                             $lpbsWithoutTtf = $goodsReceipts->filter(fn($gr) => !$gr->ttf);
-                            $ttfs = \App\Models\Ttf::with(['goodsReceipt.purchaseOrder.product', 'goodsReceipt.purchaseOrder.supplier'])->latest()->get();
+                            $ttfs = \App\Models\Ttf::with(['goodsReceipt.purchaseOrder.details.product', 'goodsReceipt.purchaseOrder.supplier'])->latest()->get();
                         @endphp
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1255,90 +1110,7 @@
 
                 <!-- Tab 2: Bidding Submission -->
                 @if($activeTab === 'bidding')
-                    <!-- Alert Petunjuk -->
-                    <div class="mb-4 p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border-l-4 border-emerald-500 rounded-r-xl text-slate-700 dark:text-slate-400 shadow-sm flex items-start space-x-2.5 no-print">
-                        <svg width="16" height="16" class="h-4 w-4 text-emerald-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <div class="text-[11px]">
-                            <span class="font-bold text-xs text-emerald-900 dark:text-emerald-450 block">💡 Petunjuk Pengisian Penawaran (Bidding)</span>
-                            <p class="mt-0.5 leading-relaxed">Tinjau kuantitas PO ritel yang dibutuhkan. Harap input penawaran harga modal Anda per PCS untuk masing-masing barang, kemudian tekan tombol 'Kirim Semua Penawaran Final'.</p>
-                        </div>
-                    </div>
-
-                    <!-- Bidding Form Box -->
-                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-                        <h2 class="text-sm font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="h-6 w-6 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-450 rounded-lg flex items-center justify-center text-xs">🤝</span>
-                            Stage 2: Mengajukan Penawaran Harga (Bidding)
-                        </h2>
-                        
-                        @php
-                            $biddingPos = $purchaseOrders->where('status', 'PENDING_BIDDING');
-                        @endphp
-
-                        @if($biddingPos->isEmpty())
-                            <p class="text-xs text-slate-400 dark:text-slate-550 italic text-center py-8 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800/50 rounded-xl">Tidak ada draf Purchase Order (PO) terbuka untuk bidding penawaran saat ini.</p>
-                        @else
-                            <form action="{{ route('dashboard.offers.submit') }}" method="POST" class="space-y-5">
-                                @csrf
-                                <div class="space-y-3">
-                                    @foreach($biddingPos as $po)
-                                    @php
-                                        $existingOffer = $myOffersDetails->where('user_id', auth()->user()->id)->where('purchase_order_id', $po->id)->first();
-                                    @endphp
-                                    <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 shadow-inner">
-                                        <div class="flex flex-wrap justify-between items-center gap-3">
-                                            <div>
-                                                <span class="px-2 py-0.5 text-[8px] font-bold bg-amber-100 dark:bg-amber-955 text-amber-800 dark:text-amber-450 border border-amber-200 rounded uppercase">Bidding Open</span>
-                                                <h3 class="font-bold text-xs text-slate-900 dark:text-white mt-1.5">{{ $po->po_number }}</h3>
-                                                <p class="text-[10px] text-slate-505 dark:text-slate-400 mt-0.5">Produk: <strong class="text-slate-700 dark:text-slate-300 font-semibold">{{ $po->product->name }}</strong></p>
-                                            </div>
-                                            <div class="flex items-center space-x-2 w-full sm:w-auto">
-                                                <div class="relative">
-                                                    <span class="absolute left-2.5 top-1.5 text-[11px] font-bold text-slate-400">Rp</span>
-                                                    <input type="number" 
-                                                           name="prices[{{ $po->id }}]" 
-                                                           min="0" 
-                                                           value="{{ $existingOffer ? $existingOffer->price_per_pcs : '' }}" 
-                                                           placeholder="Harga per PCS" 
-                                                           class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-lg pl-7 pr-2 py-1 text-xs font-bold text-slate-900 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none w-40">
-                                                </div>
-                                                @if($existingOffer)
-                                                    <span class="text-[8.5px] text-emerald-700 dark:text-emerald-400 font-bold bg-emerald-55/40 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-100/50 dark:border-emerald-900/30 font-mono">Terisi: Rp {{ number_format($existingOffer->price_per_pcs, 0, ',', '.') }}</span>
-                                                @endif
-                                            </div>
-                                        </div>
-
-                                        <!-- Box Kuantitas (Read-Only) -->
-                                        <div class="mt-3 p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg flex items-center space-x-2 text-[10.5px] shadow-sm max-w-sm">
-                                            <div class="h-6 w-6 bg-slate-100 dark:bg-slate-900/30 rounded flex items-center justify-center text-slate-400 dark:text-slate-400 flex-shrink-0">
-                                                <svg width="16" height="16" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                </svg>
-                                            </div>
-                                            <div class="flex-grow">
-                                                <p class="font-semibold text-slate-650 dark:text-slate-350">Kuantitas PO Ritel (Locked):</p>
-                                            </div>
-                                            <div class="text-right flex-shrink-0 bg-blue-50 dark:bg-blue-955/40 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded border border-blue-100 dark:border-blue-900/30 font-extrabold font-mono">
-                                                {{ $po->qty_po }} PCS
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @endforeach
-                                </div>
-
-                                <div class="pt-3 border-t border-slate-105 dark:border-slate-800 flex justify-end">
-                                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-xl text-[11px] shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-200 flex items-center space-x-1.5">
-                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                        </svg>
-                                        <span>Kirim Semua Penawaran Final</span>
-                                    </button>
-                                </div>
-                            </form>
-                        @endif
-                    </div>
+                    @include('partials.bidding-supplier')
                 @endif
 
                 <!-- Tab 3: VRS Scheduling -->
@@ -1374,23 +1146,23 @@
                                 @csrf
                                 <div class="space-y-3">
                                     @foreach($wonPos as $po)
-                                    <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 flex flex-wrap justify-between items-center gap-3">
-                                        <div>
-                                            <span class="px-2 py-0.5 text-[8px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-450 border border-blue-200 dark:border-blue-900/35 rounded-full uppercase">Awaiting Delivery</span>
-                                            <h3 class="font-bold text-xs text-slate-900 dark:text-white mt-1.5">{{ $po->po_number }}</h3>
-                                            <p class="text-[10px] text-rose-600 dark:text-rose-500 font-bold mt-0.5">Batas Waktu: {{ $po->delivery_deadline ? $po->delivery_deadline->format('Y-m-d') : '-' }}</p>
+                                        <div class="p-3 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-955/20 flex flex-wrap justify-between items-center gap-3">
+                                            <div>
+                                                <span class="px-2 py-0.5 text-[8px] font-bold bg-blue-100 dark:bg-blue-955 text-blue-800 dark:text-blue-455 border border-blue-200 dark:border-blue-900/35 rounded-full uppercase">Awaiting Delivery</span>
+                                                <h3 class="font-bold text-xs text-slate-900 dark:text-white mt-1.5 flex items-center gap-1.5">Faktur PO: <span class="font-mono text-blue-650 dark:text-blue-400">{{ $po->po_number }}</span></h3>
+                                                <p class="text-[10px] text-rose-600 dark:text-rose-500 font-bold mt-0.5">Batas Waktu: {{ $po->delivery_deadline ? $po->delivery_deadline->format('Y-m-d') : '-' }}</p>
+                                            </div>
+                                            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                                                <input type="date" name="scheduled_dates[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                                
+                                                <select name="time_slots[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+                                                    <option value="">Pilih Slot Waktu</option>
+                                                    <option value="09:00 - 11:00">09:00 - 11:00</option>
+                                                    <option value="11:00 - 13:00">11:00 - 13:00</option>
+                                                    <option value="13:00 - 15:00">13:00 - 15:00</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                            <input type="date" name="scheduled_dates[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                                            
-                                            <select name="time_slots[{{ $po->id }}]" class="border border-slate-350 dark:border-slate-800 bg-white dark:bg-slate-955 rounded-lg p-1.5 text-xs font-semibold text-slate-850 dark:text-white focus:ring-1 focus:ring-emerald-500 focus:outline-none">
-                                                <option value="">Pilih Slot Waktu</option>
-                                                <option value="09:00 - 11:00">09:00 - 11:00</option>
-                                                <option value="11:00 - 13:00">11:00 - 13:00</option>
-                                                <option value="13:00 - 15:00">13:00 - 15:00</option>
-                                            </select>
-                                        </div>
-                                    </div>
                                     @endforeach
                                 </div>
 
@@ -1403,6 +1175,35 @@
                                     </button>
                                 </div>
                             </form>
+                        @endif
+                    </div>
+
+                    <!-- List Antrean Truk Terdaftar (Supplier View) -->
+                    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm mt-6">
+                        <h3 class="text-sm font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="h-6 w-6 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-450 rounded-lg flex items-center justify-center text-xs">🚛</span>
+                            Antrean Truk Logistik Terdaftar Anda
+                        </h3>
+                        @if($vrsSchedules->isEmpty())
+                            <p class="text-xs text-slate-450 dark:text-slate-550 italic text-center py-6 bg-slate-50 dark:bg-slate-955/20 rounded-xl">Belum ada antrean truk logistik terdaftar.</p>
+                        @else
+                            <div class="space-y-4">
+                                @foreach($vrsSchedules as $sched)
+                                    <div class="p-4 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-955/20 shadow-sm flex flex-wrap justify-between items-center gap-3">
+                                        <div>
+                                            <h4 class="font-bold text-xs text-slate-900 dark:text-white">PO: <span class="font-mono text-blue-650 dark:text-blue-400">{{ $sched->purchaseOrder->po_number }}</span></h4>
+                                            <p class="text-[10px] text-slate-505 dark:text-slate-400 font-semibold font-mono mt-0.5">Tanggal: {{ $sched->scheduled_date }} (Slot: {{ $sched->time_slot }})</p>
+                                        </div>
+                                        <div>
+                                            @if($sched->status === 'completed')
+                                                <span class="px-2 py-0.5 text-[8px] font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-450 border border-emerald-100 dark:border-emerald-900/35 rounded-full uppercase">Selesai</span>
+                                            @else
+                                                <span class="px-2 py-0.5 text-[8px] font-bold bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-400 border border-amber-100 dark:border-amber-900/35 rounded-full uppercase text-amber-600">Booking</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         @endif
                     </div>
                 @endif
@@ -1868,6 +1669,25 @@
                 if (e.target && e.target.classList.contains('ajax-lpb-form')) {
                     e.preventDefault();
                     const form = e.target;
+                    
+                    // Frontend validation: check if all qty_received are valid (not negative and do not exceed qty_po)
+                    let isValid = true;
+                    let errorMsg = '';
+                    const receivedInputs = form.querySelectorAll('input[name^="qty_received["]');
+                    receivedInputs.forEach(input => {
+                        const qtyReceived = parseInt(input.value) || 0;
+                        const maxVal = parseInt(input.getAttribute('max')) || 0;
+                        if (qtyReceived < 0 || qtyReceived > maxVal) {
+                            isValid = false;
+                            errorMsg = `Jumlah barang fisik diterima tidak boleh kurang dari 0 atau melebihi kuantitas PO (${maxVal} PCS)!`;
+                        }
+                    });
+
+                    if (!isValid) {
+                        showToast(errorMsg, 'error');
+                        return;
+                    }
+
                     const poId = form.getAttribute('data-po-id');
                     const supplierId = form.getAttribute('data-supplier-id');
                     const btn = form.querySelector('button[type="submit"]');

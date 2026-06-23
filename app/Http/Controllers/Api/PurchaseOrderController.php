@@ -28,7 +28,7 @@ class PurchaseOrderController extends Controller
         $supplierCode = $supplier->supplier_code;
 
         // Ambil PO yang terikat ke supplier ini (dimenangkan oleh user sales ini) ATAU PO pending untuk barang milik supplier ini saja
-        $pos = PurchaseOrder::with(['product']) 
+        $pos = PurchaseOrder::with(['details.product']) 
             ->where(function ($q) use ($supplierId, $request) {
                 $q->where('selected_supplier_id', $supplierId)
                   ->whereHas('offers', function ($qo) use ($request) {
@@ -38,7 +38,7 @@ class PurchaseOrderController extends Controller
             })
             ->orWhere(function ($q) use ($supplierCode) {
                 $q->where('status', 'PENDING_BIDDING')
-                  ->whereHas('product', function ($qp) use ($supplierCode) {
+                  ->whereHas('details.product', function ($qp) use ($supplierCode) {
                       $qp->where('plu_code', 'like', $supplierCode . '%');
                   });
             })
@@ -98,7 +98,7 @@ class PurchaseOrderController extends Controller
         $supplierId = $supplier->id;
         $supplierCode = $supplier->supplier_code;
 
-        $po = PurchaseOrder::with(['product'])
+        $po = PurchaseOrder::with(['details.product'])
             ->where(function($query) use ($supplierId, $supplierCode, $request) {
                 $query->where(function ($q) use ($supplierId, $request) {
                     $q->where('selected_supplier_id', $supplierId)
@@ -109,7 +109,7 @@ class PurchaseOrderController extends Controller
                 })
                 ->orWhere(function ($q) use ($supplierCode) {
                     $q->where('status', 'PENDING_BIDDING')
-                      ->whereHas('product', function ($qp) use ($supplierCode) {
+                      ->whereHas('details.product', function ($qp) use ($supplierCode) {
                           $qp->where('plu_code', 'like', $supplierCode . '%');
                       });
                 });
@@ -130,10 +130,11 @@ class PurchaseOrderController extends Controller
         $supplierId = $request->user()->supplier_id;
         
         $request->validate([
-            'price_per_pcs' => 'required|numeric|min:0'
+            'price_per_pcs' => 'required|numeric|min:0',
+            'product_id'    => 'nullable|exists:products,id'
         ]);
 
-        $po = PurchaseOrder::findOrFail($id);
+        $po = PurchaseOrder::with('details')->findOrFail($id);
 
         if ($po->status !== 'PENDING_BIDDING') {
             return response()->json([
@@ -142,10 +143,25 @@ class PurchaseOrderController extends Controller
             ], 422);
         }
 
-        // Simpan penawaran harga dari supplier per user_id sales
+        // Jika product_id tidak dikirim, gunakan product_id pertama dari detail PO
+        $productId = $request->product_id;
+        if (!$productId) {
+            $firstDetail = $po->details->first();
+            $productId = $firstDetail ? $firstDetail->product_id : null;
+        }
+
+        if (!$productId) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Detail produk PO tidak ditemukan.'
+            ], 422);
+        }
+
+        // Simpan penawaran harga dari supplier per user_id sales per produk
         $offer = Offer::updateOrCreate(
             [
                 'purchase_order_id' => $po->id,
+                'product_id'        => $productId,
                 'user_id'           => $request->user()->id,
             ],
             [
@@ -167,25 +183,35 @@ class PurchaseOrderController extends Controller
      */
     public function compareOffers($id)
     {
-        $po = PurchaseOrder::with(['product'])->findOrFail($id);
+        $po = PurchaseOrder::with(['details.product'])->findOrFail($id);
 
         $offers = Offer::with(['supplier', 'user'])
             ->where('purchase_order_id', $po->id)
             ->get();
 
-        $compareData = $offers->map(function ($offer) use ($po) {
-            $totalGrossPrice = $po->qty_po * $offer->price_per_pcs;
+        $grouped = $offers->groupBy('user_id');
+
+        $compareData = $grouped->map(function ($userOffers) use ($po) {
+            $firstOffer = $userOffers->first();
             
+            // Hitung total kotor dari seluruh item PO
+            $totalGrossPrice = 0;
+            foreach ($po->details as $detail) {
+                $offerItem = $userOffers->where('product_id', $detail->product_id)->first();
+                $price = $offerItem ? (float) $offerItem->price_per_pcs : 0.0;
+                $totalGrossPrice += $detail->qty_po * $price;
+            }
+
             return [
-                'id' => $offer->id,
-                'supplier_name' => $offer->supplier ? $offer->supplier->name : 'N/A',
-                'sales_username' => $offer->user ? $offer->user->username : 'N/A',
-                'price_per_pcs' => (float) $offer->price_per_pcs,
+                'id' => $firstOffer->id,
+                'supplier_name' => $firstOffer->supplier ? $firstOffer->supplier->name : 'N/A',
+                'sales_username' => $firstOffer->user ? $firstOffer->user->username : 'N/A',
+                'price_per_pcs' => (float) $firstOffer->price_per_pcs,
                 'total_gross_price' => (float) $totalGrossPrice,
-                'status' => $offer->status,
-                'created_at' => $offer->created_at,
+                'status' => $firstOffer->status,
+                'created_at' => $firstOffer->created_at,
             ];
-        });
+        })->values();
 
         return response()->json([
             'status' => 'success',

@@ -54,39 +54,32 @@
     </button>
 
     <!-- Main Wrapper -->
-    <div class="w-full max-w-lg transition-all duration-300">
+    <div class="w-full max-w-sm transition-all duration-300">
         
         <!-- Brand -->
-        <div class="flex items-center gap-3 mb-8 justify-center">
-            <div class="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-extrabold shadow-md">
-                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-            </div>
-            <div>
-                <h1 class="text-lg font-extrabold text-slate-800 dark:text-white leading-none">AMANDA<span class="text-blue-600 dark:text-blue-500">mart</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Portal B2B Supplier & Vendor</p>
-            </div>
+        <div class="flex flex-col items-center justify-center mb-5">
+            <img src="{{ asset('logo-amandamart.png') }}" alt="AmandaMart Logo" class="h-8.5 w-auto">
+            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">Portal B2B Supplier & Vendor</p>
         </div>
 
         <!-- Progress Steps -->
-        <div class="flex items-center justify-between mb-8 px-4">
-            <div class="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                <div class="h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-[10px]">
+        <div class="flex items-center justify-between mb-6 px-3">
+            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                <div class="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-955/50 border border-emerald-300 dark:border-emerald-800 flex items-center justify-center text-[9px]">
                     ✓
                 </div>
                 <span>Login</span>
             </div>
-            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-3"></div>
-            <div class="flex items-center gap-2 text-xs font-bold text-blue-600 dark:text-blue-400">
-                <div class="h-6 w-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] shadow-sm">
+            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="flex items-center gap-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                <div class="h-5 w-5 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] shadow-sm">
                     2
                 </div>
                 <span>Setup 2FA</span>
             </div>
-            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-3"></div>
-            <div class="flex items-center gap-2 text-xs font-semibold text-slate-400 dark:text-slate-600">
-                <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[10px]">
+            <div class="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
+            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400 dark:text-slate-600">
+                <div class="h-5 w-5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center text-[9px]">
                     3
                 </div>
                 <span>Selesai</span>
@@ -94,18 +87,18 @@
         </div>
 
         <!-- Card Container -->
-        <div class="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 p-6 sm:p-8 mb-6 transition-all duration-300">
+        <div class="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200/50 dark:border-slate-800/50 p-5 sm:p-6 mb-4 transition-all duration-300">
             
-            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 class="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Setup Google Authenticator
             </h2>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
                 Halo, <strong class="text-slate-800 dark:text-slate-200 font-semibold">{{ $username }}</strong>! Ini adalah pertama kalinya Anda masuk ke sistem. Silakan sambungkan akun Anda ke Google Authenticator untuk verifikasi keamanan dua faktor (2FA).
             </p>
 
             <!-- Error Alerts -->
             @if ($errors->any())
-                <div class="p-4 my-4 text-xs text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl flex items-start space-x-2" role="alert">
+                <div class="p-3 my-3 text-[11px] text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-955/30 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-start space-x-2" role="alert">
                     <svg class="h-4 w-4 text-rose-600 dark:text-rose-500 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
@@ -133,15 +126,15 @@
             </div>
 
             <!-- Tab Switching Buttons -->
-            <div class="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-5 bg-slate-50 dark:bg-slate-950/40 p-1">
-                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white" id="tab-btn-qr" onclick="switchTab('qr')">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="flex border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden mb-4 bg-slate-50 dark:bg-slate-955/40 p-0.5">
+                <button class="flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 bg-white dark:bg-slate-900 shadow-sm text-slate-900 dark:text-white" id="tab-btn-qr" onclick="switchTab('qr')">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
                     Pindai QR Code
                 </button>
-                <button class="flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 text-slate-400 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-300" id="tab-btn-manual" onclick="switchTab('manual')">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button class="flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all flex items-center justify-center gap-1 text-slate-400 dark:text-slate-600 hover:text-slate-800 dark:hover:text-slate-300" id="tab-btn-manual" onclick="switchTab('manual')">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
                     Kunci Manual
@@ -150,9 +143,9 @@
 
             <!-- Tab Content: QR Code -->
             <div id="tab-content-qr" class="block">
-                <div class="flex flex-col items-center gap-4 p-5 bg-slate-50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 rounded-2xl mb-5">
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ urlencode($qrCodeUrl) }}" alt="QR Code 2FA" class="w-48 h-48 border-4 border-white dark:border-slate-900 rounded-xl shadow-md">
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">
+                <div class="flex flex-col items-center gap-3 p-4 bg-slate-50 dark:bg-slate-955/40 border border-slate-200 dark:border-slate-800 rounded-xl mb-4">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ urlencode($qrCodeUrl) }}" alt="QR Code 2FA" class="w-36 h-36 border-4 border-white dark:border-slate-900 rounded-lg shadow-md">
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-relaxed">
                         Pindai kode QR di atas dengan membuka aplikasi <strong class="text-slate-800 dark:text-slate-200">Google Authenticator</strong>, tekan tombol <strong class="text-slate-800 dark:text-slate-200">"+"</strong>, lalu pilih <strong class="text-slate-800 dark:text-slate-200">"Scan QR Code"</strong>.
                     </p>
                 </div>
@@ -189,20 +182,20 @@
                 </div>
             </div>
 
-            <hr class="border-slate-200 dark:border-slate-800 my-5">
+            <hr class="border-slate-200 dark:border-slate-800 my-4">
 
             <!-- OTP Confirmation Form -->
-            <form id="setupForm" method="POST" action="{{ route('2fa.setup.confirm') }}" class="space-y-4">
+            <form id="setupForm" method="POST" action="{{ route('2fa.setup.confirm') }}" class="space-y-3.5">
                 @csrf
                 <div>
-                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2" for="otp">
+                    <label class="block text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1.5" for="otp">
                         Kode Konfirmasi OTP
                     </label>
                     <input
                         type="text"
                         id="otp"
                         name="otp"
-                        class="w-full py-3 text-center text-2xl font-mono font-bold tracking-[0.75em] bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition duration-200 text-slate-900 dark:text-white"
+                        class="w-full py-2 text-center text-xl font-mono font-bold tracking-[0.75em] bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition duration-200 text-slate-900 dark:text-white"
                         placeholder="000000"
                         maxlength="6"
                         inputmode="numeric"
@@ -212,8 +205,8 @@
                     >
                 </div>
 
-                <button type="submit" class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98] transition-all duration-200 text-sm flex items-center justify-center gap-2" id="submitBtn">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <button type="submit" class="w-full py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98] transition-all duration-200 text-xs flex items-center justify-center gap-1.5" id="submitBtn">
+                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Konfirmasi & Aktifkan 2FA
@@ -222,7 +215,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="text-center text-xs text-slate-400 dark:text-slate-500">
+        <div class="text-center text-[10px] text-slate-400 dark:text-slate-550">
             Butuh bantuan? Silakan hubungi tim IT Administrator &mdash; 
             <a href="{{ route('login') }}" class="underline hover:text-slate-600 dark:hover:text-slate-300">Kembali ke Login</a>
         </div>

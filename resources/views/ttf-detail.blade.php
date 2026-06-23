@@ -97,7 +97,7 @@
         <div class="border-b border-slate-200 dark:border-slate-800 pb-6 mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
-                    <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">AMANDA<span class="text-indigo-600 dark:text-indigo-500 font-semibold">mart</span></h1>
+                    <img src="{{ asset('logo-amandamart.png') }}" alt="AmandaMart Logo" class="h-8 w-auto">
                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold">Departemen Keuangan & Pajak</p>
                     <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Jl. Mengger Hilir No.123, Sukapura, Kec. Dayeuhkolot, Kabupaten Bandung, Jawa Barat 40267</p>
                 </div>
@@ -146,32 +146,43 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
-                        <td class="py-3.5 px-4">
-                            <p class="font-bold text-slate-800 dark:text-slate-200 text-sm">{{ $ttf->goodsReceipt->purchaseOrder->product->name }}</p>
-                            <p class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">PLU: {{ $ttf->goodsReceipt->purchaseOrder->product->plu_code }}</p>
-                        </td>
-                        <td class="py-3.5 px-4 text-center font-bold text-slate-800 dark:text-slate-300 text-sm">{{ $ttf->goodsReceipt->qty_received }} PCS</td>
+                    @php
+                        $subtotalGross = 0;
+                    @endphp
+                    @foreach($ttf->goodsReceipt->details as $lpbDetail)
                         @php
-                            $pricePerPcs = ($ttf->goodsReceipt->qty_received > 0)
-                                ? ($ttf->total_amount + $ttf->total_deductions) / $ttf->goodsReceipt->qty_received
-                                : 0;
+                            $pId = $lpbDetail->product_id;
+                            $poDetail = $ttf->goodsReceipt->purchaseOrder->details->where('product_id', $pId)->first();
+                            $pricePerPcs = $poDetail ? (float) $poDetail->price_per_pcs : 0.0;
+                            $qtyReceived = $lpbDetail->qty_received;
+                            $subtotal = $qtyReceived * $pricePerPcs;
+                            $subtotalGross += $subtotal;
+                            
+                            $returItem = $ttf->goodsReceipt->returs->where('product_id', $pId)->first();
+                            $qtyRetur = $returItem ? $returItem->qty_retur : 0;
+                            $deduction = $qtyRetur * $pricePerPcs;
                         @endphp
-                        <td class="py-3.5 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">Rp {{ number_format($pricePerPcs, 0, ',', '.') }}</td>
-                        <td class="py-3.5 px-4 text-right font-bold text-slate-800 dark:text-slate-200">Rp {{ number_format($ttf->goodsReceipt->qty_received * $pricePerPcs, 0, ',', '.') }}</td>
-                    </tr>
-                    
-                    @if($ttf->total_deductions > 0)
-                    <tr class="bg-rose-50/30 dark:bg-rose-950/10 text-rose-800 dark:text-rose-400 font-medium">
-                        <td class="py-3.5 px-4">
-                            <p class="font-bold text-rose-700 dark:text-rose-400">Penalti Potongan Retur / Barang Rusak</p>
-                            <p class="text-[10px] text-rose-500 dark:text-rose-400 italic mt-0.5">Jumlah Rusak: {{ $ttf->goodsReceipt->retur?->qty_retur }} PCS | Alasan: {{ $ttf->goodsReceipt->retur?->reason }}</p>
-                        </td>
-                        <td class="py-3.5 px-4 text-center font-bold">-{{ $ttf->goodsReceipt->retur?->qty_retur }} PCS</td>
-                        <td class="py-3.5 px-4 text-right">Rp {{ number_format($pricePerPcs, 0, ',', '.') }}</td>
-                        <td class="py-3.5 px-4 text-right font-black text-rose-600 dark:text-rose-400">-Rp {{ number_format($ttf->total_deductions, 0, ',', '.') }}</td>
-                    </tr>
-                    @endif
+                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition">
+                            <td class="py-3.5 px-4">
+                                <p class="font-bold text-slate-800 dark:text-slate-200 text-sm">{{ $lpbDetail->product->name }}</p>
+                                <p class="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">PLU: {{ $lpbDetail->product->plu_code }}</p>
+                            </td>
+                            <td class="py-3.5 px-4 text-center font-bold text-slate-800 dark:text-slate-300 text-sm">{{ $qtyReceived }} PCS</td>
+                            <td class="py-3.5 px-4 text-right font-semibold text-slate-700 dark:text-slate-300">Rp {{ number_format($pricePerPcs, 0, ',', '.') }}</td>
+                            <td class="py-3.5 px-4 text-right font-bold text-slate-800 dark:text-slate-200">Rp {{ number_format($subtotal, 0, ',', '.') }}</td>
+                        </tr>
+                        
+                        @if($qtyRetur > 0)
+                        <tr class="bg-rose-50/30 dark:bg-rose-950/10 text-rose-800 dark:text-rose-400 font-medium">
+                            <td class="py-3.5 px-4 pl-8">
+                                <p class="font-bold text-rose-750 dark:text-rose-400">↳ Potongan Retur: {{ $returItem->reason }}</p>
+                            </td>
+                            <td class="py-3.5 px-4 text-center font-bold">-{{ $qtyRetur }} PCS</td>
+                            <td class="py-3.5 px-4 text-right">Rp {{ number_format($pricePerPcs, 0, ',', '.') }}</td>
+                            <td class="py-3.5 px-4 text-right font-black text-rose-600 dark:text-rose-400">-Rp {{ number_format($deduction, 0, ',', '.') }}</td>
+                        </tr>
+                        @endif
+                    @endforeach
                 </tbody>
             </table>
         </div>
@@ -181,7 +192,7 @@
             <div class="w-64 space-y-2.5 text-xs">
                 <div class="flex justify-between text-slate-500 dark:text-slate-450">
                     <span>Subtotal Kotor:</span>
-                    <span class="font-semibold text-slate-800 dark:text-slate-300">Rp {{ number_format($ttf->total_amount + $ttf->total_deductions, 0, ',', '.') }}</span>
+                    <span class="font-semibold text-slate-800 dark:text-slate-300">Rp {{ number_format($subtotalGross, 0, ',', '.') }}</span>
                 </div>
                 <div class="flex justify-between text-rose-600 dark:text-rose-400">
                     <span>Potongan Retur:</span>

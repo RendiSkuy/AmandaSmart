@@ -11,8 +11,6 @@ return new class extends Migration
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->id();
             $table->string('po_number')->unique();
-            $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->integer('qty_po');
             $table->string('status')->default('pending');
             $table->foreignId('selected_supplier_id')->nullable()->constrained('suppliers')->onDelete('set null');
             $table->timestamp('delivery_deadline')->nullable();

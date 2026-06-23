@@ -17,7 +17,7 @@ class TTFController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        $query = Ttf::with(['goodsReceipt.purchaseOrder.product'])->latest();
+        $query = Ttf::with(['goodsReceipt.purchaseOrder.details.product'])->latest();
 
         if ($request->user()->role === 'md') {
             if ($request->has('supplier_id')) {
@@ -49,41 +49,29 @@ class TTFController extends Controller
             'goods_receipt_id' => 'required|exists:goods_receipts,id'
         ]);
 
-        // Ambil LPB beserta data PO terkait
-        $lpb = GoodsReceipt::with(['purchaseOrder.product', 'retur'])->findOrFail($request->goods_receipt_id);
+        $lpb = GoodsReceipt::with(['purchaseOrder.details.product', 'details', 'returs'])->findOrFail($request->goods_receipt_id);
         
-        $supplierId = $lpb->purchaseOrder->selected_supplier_id;
+        $totalAmount = 0;
+        $totalDeductions = 0;
 
-        if (!$supplierId) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Supplier tidak ditemukan untuk PO ini.'
-            ], 422);
+        foreach ($lpb->details as $lpbDetail) {
+            $pId = $lpbDetail->product_id;
+            
+            // Ambil harga beli yang disepakati dari PO detail
+            $poDetail = $lpb->purchaseOrder->details->where('product_id', $pId)->first();
+            $pricePerPcs = $poDetail ? (float) $poDetail->price_per_pcs : 0.0;
+
+            // Qty diterima
+            $qtyReceived = $lpbDetail->qty_received;
+
+            // Qty retur
+            $returItem = $lpb->returs->where('product_id', $pId)->first();
+            $qtyRetur = $returItem ? $returItem->qty_retur : 0;
+
+            $totalAmount += $qtyReceived * $pricePerPcs;
+            $totalDeductions += $qtyRetur * $pricePerPcs;
         }
 
-        // Ambil harga penawaran supplier yang diterima (accepted offer)
-        $acceptedOffer = Offer::where('purchase_order_id', $lpb->purchase_order_id)
-            ->where('supplier_id', $supplierId)
-            ->where('status', 'accepted')
-            ->first();
-
-        if (!$acceptedOffer) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Harga penawaran yang disetujui (accepted offer) tidak ditemukan untuk PO ini.'
-            ], 422);
-        }
-
-        $pricePerPcs = $acceptedOffer->price_per_pcs;
-
-        // Hitung total kotor: qty_received * harga penawaran
-        $totalAmount = $lpb->qty_received * $pricePerPcs;
-
-        // Hitung potongan denda/retur jika ada barang yang diretur
-        $qtyRetur = $lpb->retur ? $lpb->retur->qty_retur : 0;
-        $totalDeductions = $qtyRetur * $pricePerPcs;
-
-        // Total Bayar = Nominal kotor - Potongan denda
         $finalPayment = $totalAmount - $totalDeductions;
 
         $ttf = Ttf::create([

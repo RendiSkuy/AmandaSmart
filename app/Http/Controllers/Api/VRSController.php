@@ -16,7 +16,7 @@ class VRSController extends Controller
     {
         $supplierId = $request->user()->supplier_id;
 
-        $schedules = VrsSchedule::with(['purchaseOrder.product'])
+        $schedules = VrsSchedule::with(['purchaseOrder.details.product'])
             ->whereHas('purchaseOrder.offers', function ($query) use ($request) {
                 $query->where('user_id', $request->user()->id)
                       ->where('status', 'accepted');

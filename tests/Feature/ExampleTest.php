@@ -77,9 +77,14 @@ class ExampleTest extends TestCase
         // 2. Buat PO PENDING_BIDDING
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-TEST-QUICK',
+            'status' => 'PENDING_BIDDING',
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
             'product_id' => $product->id,
             'qty_po' => 1000,
-            'status' => 'PENDING_BIDDING',
+            'price_per_pcs' => 0.0,
         ]);
 
         // 3. MD melakukan Quick Approval (buat offer & approve sekaligus)
@@ -117,20 +122,27 @@ class ExampleTest extends TestCase
         $product = \App\Models\Product::first();
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-TEST-MULTIPLE',
+            'status' => 'PENDING_BIDDING',
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
             'product_id' => $product->id,
             'qty_po' => 1000,
-            'status' => 'PENDING_BIDDING',
+            'price_per_pcs' => 0.0,
         ]);
 
         // 2. Sales 1 submit offer
         $response1 = $this->actingAs($sales1)->post("/api/supplier/purchase-orders/{$po->id}/offers", [
             'price_per_pcs' => 3000,
+            'product_id' => $product->id,
         ]);
         $response1->assertStatus(200);
 
         // 3. Sales 2 submit offer untuk PO yang sama
         $response2 = $this->actingAs($sales2)->post("/api/supplier/purchase-orders/{$po->id}/offers", [
             'price_per_pcs' => 2800,
+            'product_id' => $product->id,
         ]);
         $response2->assertStatus(200);
 
@@ -156,9 +168,14 @@ class ExampleTest extends TestCase
         $product = \App\Models\Product::first();
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-TEST-COMPARE',
+            'status' => 'PENDING_BIDDING',
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
             'product_id' => $product->id,
             'qty_po' => 1200,
-            'status' => 'PENDING_BIDDING',
+            'price_per_pcs' => 0.0,
         ]);
 
         // Submit penawaran
@@ -166,6 +183,7 @@ class ExampleTest extends TestCase
             'purchase_order_id' => $po->id,
             'supplier_id' => $sales1->supplier_id,
             'user_id' => $sales1->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 3000,
             'status' => 'pending'
         ]);
@@ -174,6 +192,7 @@ class ExampleTest extends TestCase
             'purchase_order_id' => $po->id,
             'supplier_id' => $sales2->supplier_id,
             'user_id' => $sales2->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 2800,
             'status' => 'pending'
         ]);
@@ -221,10 +240,15 @@ class ExampleTest extends TestCase
         // 2. Buat PO
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-ISO-TEST-1',
-            'product_id' => $product->id,
-            'qty_po' => 1000,
             'status' => 'APPROVED',
             'selected_supplier_id' => $sales2->supplier_id,
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
+            'product_id' => $product->id,
+            'qty_po' => 1000,
+            'price_per_pcs' => 5000,
         ]);
 
         // 3. Buat tawaran diterima dari sales2
@@ -232,6 +256,7 @@ class ExampleTest extends TestCase
             'purchase_order_id' => $po->id,
             'supplier_id' => $sales2->supplier_id,
             'user_id' => $sales2->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 5000,
             'status' => 'accepted',
         ]);
@@ -246,8 +271,14 @@ class ExampleTest extends TestCase
 
         $lpb = \App\Models\GoodsReceipt::create([
             'purchase_order_id' => $po->id,
-            'qty_received' => 1000,
             'received_at' => now(),
+            'barcode' => 'BARCODE123',
+        ]);
+
+        \App\Models\GoodsReceiptDetail::create([
+            'goods_receipt_id' => $lpb->id,
+            'product_id' => $product->id,
+            'qty_received' => 1000,
         ]);
 
         $ttf = \App\Models\Ttf::create([
@@ -294,13 +325,20 @@ class ExampleTest extends TestCase
         // Buat 6 PO berbeda
         $pos = [];
         for ($i = 1; $i <= 6; $i++) {
-            $pos[] = \App\Models\PurchaseOrder::create([
+            $po = \App\Models\PurchaseOrder::create([
                 'po_number' => "PO-VRS-QT-{$i}",
-                'product_id' => $product->id,
-                'qty_po' => 1000,
                 'status' => 'APPROVED',
                 'selected_supplier_id' => $sales->supplier_id,
             ]);
+
+            \App\Models\PurchaseOrderDetail::create([
+                'purchase_order_id' => $po->id,
+                'product_id' => $product->id,
+                'qty_po' => 1000,
+                'price_per_pcs' => 5000,
+            ]);
+
+            $pos[] = $po;
         }
 
         // Buat accepted offers untuk keenamnya
@@ -309,6 +347,7 @@ class ExampleTest extends TestCase
                 'purchase_order_id' => $po->id,
                 'supplier_id' => $sales->supplier_id,
                 'user_id' => $sales->id,
+                'product_id' => $product->id,
                 'price_per_pcs' => 5000,
                 'status' => 'accepted',
             ]);
@@ -367,22 +406,35 @@ class ExampleTest extends TestCase
         // Buat 2 PO baru
         $po1 = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-BULK-1',
-            'product_id' => $product->id,
-            'qty_po' => 500,
             'status' => 'PENDING_BIDDING',
         ]);
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po1->id,
+            'product_id' => $product->id,
+            'qty_po' => 500,
+            'price_per_pcs' => 0.0,
+        ]);
+
         $po2 = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-BULK-2',
+            'status' => 'PENDING_BIDDING',
+        ]);
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po2->id,
             'product_id' => $product->id,
             'qty_po' => 600,
-            'status' => 'PENDING_BIDDING',
+            'price_per_pcs' => 0.0,
         ]);
 
         // Submit bulk penawaran via Web Dashboard
         $response = $this->actingAs($sales)->post('/dashboard/offers/submit', [
             'prices' => [
-                $po1->id => 12000,
-                $po2->id => 11500,
+                $po1->id => [
+                    $product->id => 12000
+                ],
+                $po2->id => [
+                    $product->id => 11500
+                ]
             ]
         ]);
 
@@ -444,10 +496,15 @@ class ExampleTest extends TestCase
         $poNumber = 'PO-LPB-TEST-999';
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => $poNumber,
-            'product_id' => $product->id,
-            'qty_po' => 750,
             'status' => 'APPROVED',
             'selected_supplier_id' => $supplier->id,
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
+            'product_id' => $product->id,
+            'qty_po' => 750,
+            'price_per_pcs' => 10000,
         ]);
 
         // Buat penawaran diterima (accepted offer) agar ada sales user pengirim
@@ -455,6 +512,7 @@ class ExampleTest extends TestCase
             'purchase_order_id' => $po->id,
             'supplier_id' => $supplier->id,
             'user_id' => $salesUser->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 10000,
             'status' => 'accepted',
         ]);
@@ -496,16 +554,22 @@ class ExampleTest extends TestCase
 
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-VRS-TEST-888',
-            'product_id' => $product->id,
-            'qty_po' => 500,
             'status' => 'APPROVED',
             'selected_supplier_id' => $supplier->id,
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
+            'product_id' => $product->id,
+            'qty_po' => 500,
+            'price_per_pcs' => 10000,
         ]);
 
         \App\Models\Offer::create([
             'purchase_order_id' => $po->id,
             'supplier_id' => $supplier->id,
             'user_id' => $salesUser->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 10000,
             'status' => 'accepted',
         ]);
@@ -542,24 +606,36 @@ class ExampleTest extends TestCase
 
         $po = \App\Models\PurchaseOrder::create([
             'po_number' => 'PO-TTF-TEST-777',
-            'product_id' => $product->id,
-            'qty_po' => 800,
             'status' => 'APPROVED',
             'selected_supplier_id' => $supplier->id,
+        ]);
+
+        \App\Models\PurchaseOrderDetail::create([
+            'purchase_order_id' => $po->id,
+            'product_id' => $product->id,
+            'qty_po' => 800,
+            'price_per_pcs' => 12000,
         ]);
 
         \App\Models\Offer::create([
             'purchase_order_id' => $po->id,
             'supplier_id' => $supplier->id,
             'user_id' => $salesUser->id,
+            'product_id' => $product->id,
             'price_per_pcs' => 12000,
             'status' => 'accepted',
         ]);
 
         $gr = \App\Models\GoodsReceipt::create([
             'purchase_order_id' => $po->id,
-            'qty_received' => 800,
             'received_at' => now(),
+            'barcode' => 'BARCODE123',
+        ]);
+
+        \App\Models\GoodsReceiptDetail::create([
+            'goods_receipt_id' => $gr->id,
+            'product_id' => $product->id,
+            'qty_received' => 800,
         ]);
 
         $ttf = \App\Models\Ttf::create([
@@ -581,5 +657,3 @@ class ExampleTest extends TestCase
         $response->assertSee('Akun Sales:');
     }
 }
-
-

@@ -7,6 +7,16 @@
 
 ---
 
+## 📸 Tampilan Antarmuka Aplikasi (Application Interfaces)
+
+### 1. Gerbang Akses Portal Utama B2B AmandaMart
+![B2B Portal Entry Page](public/screenshots/portal-b2b.png)
+
+### 2. Dashboard Internal Merchandiser (MD) - Pemeriksaan Stok Kritis DC
+![Merchandiser Portal Dashboard](public/screenshots/dashboard-md.png)
+
+---
+
 ## 📌 Deskripsi Sistem
 
 **Portal B2B (Business-to-Business) AmandaMart** adalah platform rantai pasok (*supply chain management*) terintegrasi yang didesain khusus untuk menghubungkan tim internal **Merchandiser (MD)** dengan **Supplier / Vendor Rekanan** secara langsung.
@@ -19,7 +29,7 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 
 ### 1. ⚡ Stage 1: Smart Restock & Auto-PO
 * Sistem secara cerdas memantau kuantitas stok produk di Distribution Center (DC).
-* MD dapat memicu pembuatan draf Purchase Order (PO) baru berstatus `PENDING_BIDDING` melalui Stored Procedure database `generate_auto_po_proc` yang secara instan menghitung sisa kapasitas gudang ($M_{\text{stock}} - \text{on\_hand}$).
+* MD dapat memicu pembuatan draf Purchase Order (PO) baru berstatus `PENDING_BIDDING` melalui Stored Procedure database `generate_auto_po_proc` yang secara instan menghitung sisa kapasitas gudang (`max_stock - on_hand`).
 
 ### 2. 🤝 Stage 2: Portal Bidding Harga Supplier
 * Akun sales dari pihak supplier rekanan mengajukan penawaran harga modal per PCS secara kolektif (*bulk submission*) untuk setiap item barang dalam PO.
@@ -36,8 +46,8 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 
 ### 5. 📦 Stage 5: LPB Gudang & Otomatisasi Retur
 * Petugas logistik DC memverifikasi unloading barang masuk dengan memasukkan kuantitas diterima (`qty_received`):
-  * **Validasi Ketat**: Backend dan frontend membatasi kuantitas masuk agar berada di rentang $0 \le \text{qty\_received} \le \text{qty\_po}$ (tidak boleh minus dan tidak boleh melebihi plafon PO).
-  * **Hitung Retur Otomatis**: Kuantitas retur (`qty_retur`) terkunci secara *Read-Only* dan otomatis dihitung berdasarkan selisih formula: $\text{qty\_retur} = \text{qty\_po} - \text{qty\_received}$.
+  * **Validasi Ketat**: Backend dan frontend membatasi kuantitas masuk agar berada di rentang `0 <= qty_received <= qty_po` (tidak boleh minus dan tidak boleh melebihi plafon PO).
+  * **Hitung Retur Otomatis**: Kuantitas retur (`qty_retur`) terkunci secara *Read-Only* dan otomatis dihitung berdasarkan selisih formula: `qty_retur = qty_po - qty_received`.
   * **Catatan Alasan**: Kolom alasan retur dapat diisi manual jika ditemukan selisih barang rusak/cacat.
 * Setelah LPB disimpan dalam blok *Database Transaction*, saldo stok fisik (`on_hand`) master produk DC langsung bertambah secara *real-time*.
 
@@ -50,6 +60,8 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 ## 🔒 Fitur Keamanan (Google 2FA)
 * Pengguna internal MD diwajibkan mengaktifkan keamanan **2FA (Two-Factor Authentication)** menggunakan aplikasi *Google Authenticator* (TOTP) demi melindungi data transaksi internal perusahaan dari akses ilegal.
 * Desain halaman setup 2FA dioptimalkan tanpa scroll otomatis (*autofocus disabled*), menjaga petunjuk visual dan QR Code bagian atas agar tidak terpotong saat halaman pertama kali dimuat.
+
+![Setup 2FA Google Authenticator](public/screenshots/setup-2fa.png)
 
 ---
 

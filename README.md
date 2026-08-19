@@ -78,7 +78,6 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 Pastikan server lokal Anda telah terinstal:
 * PHP >= 8.2 (dilengkapi ekstensi pdo, pgsql, dll.)
 * Composer
-* Node.js & NPM
 * Database PostgreSQL / SQLite
 
 ### 2. Kloning Repositori
@@ -90,7 +89,6 @@ cd AmandaSmart
 ### 3. Pasang Dependensi
 ```bash
 composer install
-npm install
 ```
 
 ### 4. Konfigurasi Environment File
@@ -108,7 +106,6 @@ php artisan migrate
 ### 6. Jalankan Server Lokal
 ```bash
 php artisan serve
-npm run dev
 ```
 Akses portal melalui peramban di `http://127.0.0.1:8000`.
 

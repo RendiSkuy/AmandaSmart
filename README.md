@@ -7,16 +7,6 @@
 
 ---
 
-## 📸 Tampilan Antarmuka Aplikasi (Application Interfaces)
-
-### 1. Gerbang Akses Portal Utama B2B AmandaMart
-![B2B Portal Entry Page](public/screenshots/portal-b2b.png)
-
-### 2. Dashboard Internal Merchandiser (MD) - Pemeriksaan Stok Kritis DC
-![Merchandiser Portal Dashboard](public/screenshots/dashboard-md.png)
-
----
-
 ## 📌 Deskripsi Sistem
 
 **Portal B2B (Business-to-Business) AmandaMart** adalah platform rantai pasok (*supply chain management*) terintegrasi yang didesain khusus untuk menghubungkan tim internal **Merchandiser (MD)** dengan **Supplier / Vendor Rekanan** secara langsung.
@@ -60,8 +50,6 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 ## 🔒 Fitur Keamanan (Google 2FA)
 * Pengguna internal MD diwajibkan mengaktifkan keamanan **2FA (Two-Factor Authentication)** menggunakan aplikasi *Google Authenticator* (TOTP) demi melindungi data transaksi internal perusahaan dari akses ilegal.
 * Desain halaman setup 2FA dioptimalkan tanpa scroll otomatis (*autofocus disabled*), menjaga petunjuk visual dan QR Code bagian atas agar tidak terpotong saat halaman pertama kali dimuat.
-
-![Setup 2FA Google Authenticator](public/screenshots/setup-2fa.png)
 
 ---
 

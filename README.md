@@ -5,42 +5,53 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v3-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
-Portal B2B (Business-to-Business) AmandaMart adalah sistem informasi manajemen rantai pasok (*supply chain management*) terintegrasi yang menghubungkan tim internal **Merchandiser (MD)** AmandaMart dengan pihak **Supplier / Vendor Rekanan (Sales)** secara langsung. 
+---
 
-Sistem ini didesain untuk mendeteksi stok kritis gudang DC, memproses pemesanan barang otomatis (*Auto PO*), memfasilitasi lelang penawaran harga (*bidding*), memanajemen slot antrean kedatangan logistik (*VRS Schedule*), memverifikasi penerimaan barang fisik (*LPB*), serta memproses pemotongan retur barang cacat hingga menerbitkan nota penagihan bersih (*Tanda Terima Faktur / TTF*).
+## 📸 Tampilan Antarmuka Aplikasi (Application Interfaces)
+
+### 1. Gerbang Akses Portal Utama B2B AmandaMart
+![B2B Portal Entry Page](public/screenshots/portal-b2b.png)
+
+### 2. Dashboard Internal Merchandiser (MD) - Pemeriksaan Stok Kritis DC
+![Merchandiser Portal Dashboard](public/screenshots/dashboard-md.png)
 
 ---
 
-## 🚀 Fitur Utama & Alur Sistem (5-Stage Workflow)
+## 📌 Deskripsi Sistem
 
-Sistem B2B AmandaMart menerapkan **5 Tahap Alur Logistik Hulu-ke-Hilir** terintegrasi:
+**Portal B2B (Business-to-Business) AmandaMart** adalah platform rantai pasok (*supply chain management*) terintegrasi yang didesain khusus untuk menghubungkan tim internal **Merchandiser (MD)** dengan **Supplier / Vendor Rekanan** secara langsung.
 
-### 1. Deteksi Stok Kritis & Auto PO (Stage 1)
-* Sistem mendeteksi stok kritis produk di Distribution Center (DC).
-* Tim MD dapat memicu Stored Procedure `generate_auto_po_proc` yang secara instan menghitung selisih kapasitas gudang ($M_{\text{stock}} - \text{on\_hand}$) berdasarkan kelipatan pemesanan (*minor*), lalu menerbitkan draf Purchase Order (PO) berstatus `PENDING_BIDDING`.
+Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mulai dari deteksi stok kritis di gudang, penawaran harga modal beli ritel (*bidding*), penjadwalan antrean truk logistik (*VRS*), pembongkaran muatan fisik (*LPB*), manajemen retur barang rusak secara transparan, hingga penagihan piutang bersih (*Tanda Terima Faktur / TTF*).
 
-### 2. Lelang Harga Bidding Supplier (Stage 2)
-* Akun sales dari pihak supplier rekanan melihat draf PO multi-item terbuka.
-* Supplier dapat mengajukan penawaran harga modal per PCS secara kolektif (*bulk submission*) untuk setiap item barang dalam PO tersebut.
+---
 
-### 3. Panel Penyetujuan & Penentuan Pemenang (Stage 3)
-* Tim MD mengelola penawaran yang masuk melalui panel dashboard terpadu dengan desain layout **2-Kolom**:
+## 🚀 Fitur Utama & Alur Sistem (5-Stage Supply Chain Workflow)
+
+### 1. ⚡ Stage 1: Smart Restock & Auto-PO
+* Sistem secara cerdas memantau kuantitas stok produk di Distribution Center (DC).
+* MD dapat memicu pembuatan draf Purchase Order (PO) baru berstatus `PENDING_BIDDING` melalui Stored Procedure database `generate_auto_po_proc` yang secara instan menghitung sisa kapasitas gudang ($M_{\text{stock}} - \text{on\_hand}$).
+
+### 2. 🤝 Stage 2: Portal Bidding Harga Supplier
+* Akun sales dari pihak supplier rekanan mengajukan penawaran harga modal per PCS secara kolektif (*bulk submission*) untuk setiap item barang dalam PO.
+
+### 3. ⚖️ Stage 3: Panel Penyetujuan & Penentuan Pemenang (2-Kolom Terpadu)
+* Panel dashboard MD terbagi menjadi **2-Kolom**:
   * **Kolom Kiri**: Accordion daftar supplier dan akun sales pengirim penawaran.
   * **Kolom Kanan**: Rincian penawaran harga terpilih, batas deadline kirim, kalkulasi grand total kotor, dan tombol persetujuan.
-* Proses penyetujuan memanfaatkan Fetch API AJAX (DOM *fade-out*) sehingga data terproses secara instan tanpa reload halaman penuh. Status PO akan berganti menjadi `APPROVED` dan harga modal disepakati langsung dikunci.
+* Penyetujuan memanfaatkan Fetch API AJAX (DOM *fade-out*) sehingga data terproses secara instan tanpa reload halaman penuh. PO berganti status menjadi `APPROVED` dan harga disepakati langsung dikunci.
 
-### 4. Booking Slot Truk VRS (Stage 4)
+### 4. 🚚 Stage 4: Booking Slot Truk VRS
 * Supplier pemenang melakukan reservasi slot logistik kedatangan truk pengiriman (*VRS Booking*) secara bulk.
-* Kapasitas gerbang bongkar muat DC dibatasi maksimal 5 truk per slot waktu per hari untuk mencegah kemacetan antrean armada di gerbang DC.
+* Kapasitas gerbang bongkar muat DC dibatasi maksimal 5 truk per slot waktu per hari untuk mencegah antrean armada di gerbang DC.
 
-### 5. Penerimaan LPB & Otomatisasi Retur (Stage 5)
-* Petugas gudang memverifikasi pembongkaran muatan fisik dengan memasukkan kuantitas diterima (`qty_received`):
+### 5. 📦 Stage 5: LPB Gudang & Otomatisasi Retur
+* Petugas logistik DC memverifikasi unloading barang masuk dengan memasukkan kuantitas diterima (`qty_received`):
   * **Validasi Ketat**: Backend dan frontend membatasi kuantitas masuk agar berada di rentang $0 \le \text{qty\_received} \le \text{qty\_po}$ (tidak boleh minus dan tidak boleh melebihi plafon PO).
-  * **Hitung Retur Otomatis**: Kuantitas retur (`qty_retur`) terkunci secara *Read-Only* dan terisi otomatis berdasarkan selisih formula: $\text{qty\_retur} = \text{qty\_po} - \text{qty\_received}$.
+  * **Hitung Retur Otomatis**: Kuantitas retur (`qty_retur`) terkunci secara *Read-Only* dan otomatis dihitung berdasarkan selisih formula: $\text{qty\_retur} = \text{qty\_po} - \text{qty\_received}$.
   * **Catatan Alasan**: Kolom alasan retur dapat diisi manual jika ditemukan selisih barang rusak/cacat.
 * Setelah LPB disimpan dalam blok *Database Transaction*, saldo stok fisik (`on_hand`) master produk DC langsung bertambah secara *real-time*.
 
-### 6. Nota Tagihan Keuangan TTF (Stage 5 Finance)
+### 6. 🧾 Stage 5 Finance: Nota Tagihan TTF
 * Nota Tanda Terima Faktur (TTF) diterbitkan otomatis setelah LPB tersimpan.
 * Nilai tagihan bersih dihitung otomatis: $(\text{Qty Diterima} \times \text{Harga Final}) - (\text{Qty Retur} \times \text{Harga Final})$ dengan tempo pembayaran jatuh tempo transfer T+14 Hari Kerja. Halaman LPB dan TTF didesain ramah-cetak (*print-friendly*).
 
@@ -52,7 +63,7 @@ Sistem B2B AmandaMart menerapkan **5 Tahap Alur Logistik Hulu-ke-Hilir** terinte
 
 ---
 
-## 🛠️ Tech Stack & Spesifikasi Teknis
+## 🛠️ Spesifikasi Teknologi (Tech Stack)
 
 * **Backend**: Laravel 11.x, PHP 8.2+
 * **Database**: PostgreSQL / SQLite (Dukungan database transaction, relational integrity constraints, dan database PL/pgSQL Stored Procedure).

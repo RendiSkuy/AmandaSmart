@@ -61,6 +61,8 @@ Sistem ini mengotomatisasi seluruh siklus logistik Distribution Center (DC), mul
 * Pengguna internal MD diwajibkan mengaktifkan keamanan **2FA (Two-Factor Authentication)** menggunakan aplikasi *Google Authenticator* (TOTP) demi melindungi data transaksi internal perusahaan dari akses ilegal.
 * Desain halaman setup 2FA dioptimalkan tanpa scroll otomatis (*autofocus disabled*), menjaga petunjuk visual dan QR Code bagian atas agar tidak terpotong saat halaman pertama kali dimuat.
 
+![Setup 2FA Google Authenticator](public/screenshots/setup-2fa.png)
+
 ---
 
 ## 🛠️ Spesifikasi Teknologi (Tech Stack)
